@@ -47,9 +47,22 @@ function dbSave(doc) {
 function dbLoad() {
   if (!db) return Promise.resolve([]);
   try {
-    return db.collection('speedResults').orderBy('ts', 'desc').limit(600).get()
-      .then(function(snap) { return snap.docs.map(function(d) { return Object.assign({ id: d.id }, d.data()); }); })
-      .catch(function(e) { console.warn('dbLoad warning (offline/blocked):', e.message); return []; });
+    var fetchPromise = db.collection('speedResults').limit(600).get()
+      .then(function(snap) {
+        var list = snap.docs.map(function(d) { return Object.assign({ id: d.id }, d.data()); });
+        return list.sort(function(a, b) {
+          var ta = a.ts ? (a.ts.toMillis ? a.ts.toMillis() : a.ts) : 0;
+          var tb = b.ts ? (b.ts.toMillis ? b.ts.toMillis() : b.ts) : 0;
+          return tb - ta;
+        });
+      });
+
+    // 2-second timeout to prevent 10s Firestore connection stalls
+    var timeoutPromise = new Promise(function(resolve) {
+      setTimeout(function() { resolve([]); }, 2000);
+    });
+
+    return Promise.race([fetchPromise, timeoutPromise]).catch(function() { return []; });
   } catch(e) {
     return Promise.resolve([]);
   }
@@ -67,11 +80,14 @@ function lsLoad() {
 }
 
 function allResults() {
-  return Promise.all([dbLoad(), lsLoad()]).then(function(results) {
-    var remote = results[0], local = results[1];
+  return Promise.all([
+    dbLoad().catch(function() { return []; }),
+    Promise.resolve(lsLoad())
+  ]).then(function(results) {
+    var remote = results[0] || [], local = results[1] || [];
     var seen = {};
     return remote.concat(local).filter(function(r) {
-      if (seen[r.id]) return false;
+      if (!r || seen[r.id]) return false;
       seen[r.id] = true; return true;
     });
   });
@@ -256,7 +272,7 @@ function setGauge(value, unit, max) {
   var arc = document.getElementById('gauge-arc');
   if (arc) arc.style.strokeDashoffset = GAUGE_LEN - pct * GAUGE_LEN;
   var gv = document.getElementById('gauge-val');
-  if (gv) gv.value = value < 10 ? parseFloat(value.toFixed(1)) : Math.round(value);
+  if (gv) gv.textContent = value < 10 ? value.toFixed(1) : Math.round(value);
   var gu = document.getElementById('gauge-unit');
   if (gu) gu.textContent = unit;
 }
@@ -405,9 +421,9 @@ function runTest() {
       var nfNum  = document.getElementById('rv-num');
       var nfUl   = document.getElementById('rv-ul');
       var nfPing = document.getElementById('rv-ping');
-      if (nfNum)  nfNum.value  = parseFloat(record.download) || 0;
-      if (nfUl)   nfUl.value   = parseFloat(record.upload)   || 0;
-      if (nfPing) nfPing.value = parseInt(record.ping)        || 0;
+      if (nfNum)  animateNumber(nfNum, parseFloat(record.download) || 0, 1000, 1);
+      if (nfUl)   animateNumber(nfUl, parseFloat(record.upload)   || 0, 1000, 1);
+      if (nfPing) animateNumber(nfPing, parseInt(record.ping)      || 0, 1000, 0);
 
       var rvPill = document.getElementById('rv-pill');
       var rvNet  = document.getElementById('rv-net');
@@ -641,15 +657,42 @@ function toggleLayer(mode) {
   allResults().then(renderMarkers);
 }
 
+// ── Number animation helper ─────────────────────────
+function animateNumber(el, targetVal, duration, decimals) {
+  if (!el) return;
+  var startVal = parseFloat(el.textContent) || 0;
+  var startTime = null;
+  duration = duration || 800;
+  decimals = decimals !== undefined ? decimals : 0;
+
+  function step(timestamp) {
+    if (!startTime) startTime = timestamp;
+    var progress = Math.min((timestamp - startTime) / duration, 1);
+    // Ease out cubic
+    var easeProgress = 1 - Math.pow(1 - progress, 3);
+    var currentVal = startVal + (targetVal - startVal) * easeProgress;
+    el.textContent = currentVal.toFixed(decimals);
+    if (progress < 1) {
+      requestAnimationFrame(step);
+    } else {
+      el.textContent = targetVal.toFixed(decimals);
+    }
+  }
+  requestAnimationFrame(step);
+}
+
 // ── Welcome stats ────────────────────────────────────
 function updateStats(results) {
-  var dls = results.filter(function(r) { return r.download > 0; }).map(function(r) { return r.download; });
-  var count = results ? results.length : 0;
-  var avg   = dls.length ? parseFloat((dls.reduce(function(a,b){return a+b;}) / dls.length).toFixed(1)) : 0;
+  var list = results || [];
+  var dls = list.filter(function(r) { return r && r.download > 0; }).map(function(r) { return r.download; });
+  var count = list.length;
+  var avg   = dls.length ? parseFloat((dls.reduce(function(a,b){return a+b;}, 0) / dls.length).toFixed(1)) : 0;
+
   var nfCount = document.getElementById('nf-count');
   var nfAvg   = document.getElementById('nf-avg');
-  if (nfCount) nfCount.value = count;
-  if (nfAvg)   nfAvg.value   = avg;
+
+  if (nfCount) animateNumber(nfCount, count, 800, 0);
+  if (nfAvg)   animateNumber(nfAvg, avg, 800, 1);
 }
 
 // ── Toast ─────────────────────────────────────────────
@@ -666,6 +709,9 @@ function showToast(msg, type) {
 // ── Wire up all buttons ───────────────────────────────
 document.addEventListener('DOMContentLoaded', function() {
   initFirebase();
+
+  // Instant render from local storage first
+  updateStats(lsLoad());
 
   var btnStart   = document.getElementById('btn-start');
   var btnViewMap = document.getElementById('btn-viewmap');
@@ -694,5 +740,6 @@ document.addEventListener('DOMContentLoaded', function() {
   var legClear = document.getElementById('leg-clear');
   if (legClear) legClear.addEventListener('click', clearFilters);
 
-  allResults().then(updateStats).catch(function(){});
+  // Fetch full remote results and update stats
+  allResults().then(updateStats).catch(function(e){ console.warn('Stats load warning:', e); });
 });

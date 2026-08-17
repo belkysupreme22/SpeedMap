@@ -11,10 +11,6 @@
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%2307080e'/><circle cx='16' cy='16' r='12' stroke='%23f59e0b' stroke-width='1.8' fill='none' opacity='0.75'/><ellipse cx='16' cy='16' rx='4.5' ry='12' stroke='%23f59e0b' stroke-width='1.8' fill='none' opacity='0.5'/><line x1='4' y1='16' x2='28' y2='16' stroke='%23f59e0b' stroke-width='1.8' opacity='0.5'/><circle cx='16' cy='16' r='3.2' fill='%23f59e0b'/></svg>" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <link rel="stylesheet" href="style.css" />
-  <!-- Number Flow web component -->
-  <script type="module">
-    import 'https://cdn.jsdelivr.net/npm/number-flow@latest/+esm';
-  </script>
 </head>
 <body>
 
@@ -63,15 +59,15 @@
       <!-- Live Global Counter Bar -->
       <div class="global-stats landing-stats">
         <div class="gstat">
-          <span class="gstat-n" id="global-count">
-            <number-flow id="nf-count" value="0"></number-flow>
+          <span class="gstat-n">
+            <span id="nf-count">0</span>
           </span>
           <span class="gstat-l">Tests Mapped</span>
         </div>
         <div class="gstat-sep"></div>
         <div class="gstat">
-          <span class="gstat-n" id="global-avg">
-            <number-flow id="nf-avg" value="0" format='{"maximumFractionDigits":1}'></number-flow>
+          <span class="gstat-n">
+            <span id="nf-avg">0.0</span>
           </span>
           <span class="gstat-l">Avg Download Mbps</span>
         </div>
@@ -149,7 +145,7 @@
         </defs>
       </svg>
       <div class="gauge-center">
-        <number-flow class="gauge-val" id="gauge-val" value="0"></number-flow>
+        <span class="gauge-val" id="gauge-val">0</span>
         <span class="gauge-unit" id="gauge-unit">Mbps</span>
       </div>
     </div>
@@ -199,7 +195,7 @@
     <div class="result-view" id="result-view">
       <div class="rv-hero">
         <div class="rv-speed">
-          <number-flow id="rv-num" class="rv-num" value="0" format='{"maximumFractionDigits":1}'></number-flow>
+          <span id="rv-num" class="rv-num">0</span>
           <span class="rv-unit">Mbps</span>
         </div>
         <span class="rv-pill" id="rv-pill">—</span>
@@ -207,11 +203,11 @@
       <p class="rv-caption">↓ Download speed</p>
       <div class="rv-grid">
         <div class="rv-stat">
-          <number-flow id="rv-ul" class="rv-sv" value="0" format='{"maximumFractionDigits":1}'></number-flow>
+          <span id="rv-ul" class="rv-sv">0</span>
           <span class="rv-sl">↑ Upload · Mbps</span>
         </div>
         <div class="rv-stat">
-          <number-flow id="rv-ping" class="rv-sv" value="0"></number-flow>
+          <span id="rv-ping" class="rv-sv">0</span>
           <span class="rv-sl">Ping · ms</span>
         </div>
         <div class="rv-stat">
