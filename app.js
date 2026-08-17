@@ -379,8 +379,8 @@ function runTest() {
     setStatus('Saving result…');
 
     var record = {
-      lat:         state.location ? parseFloat(state.location.lat.toFixed(3)) : 0,
-      lng:         state.location ? parseFloat(state.location.lng.toFixed(3)) : 0,
+      lat:         state.location ? state.location.lat : 0,
+      lng:         state.location ? state.location.lng : 0,
       download:    state.download || 0,
       upload:      state.upload   || 0,
       ping:        state.ping     || 0,
