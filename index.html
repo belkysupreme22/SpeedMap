@@ -35,6 +35,7 @@
         <span>SpeedMap</span>
       </div>
       <div class="nav-actions">
+        <button id="btn-nav-leaderboard" class="nav-link">Leaderboard</button>
         <button id="btn-nav-map" class="nav-link">View Map</button>
         <button id="btn-nav-test" class="btn-primary btn-sm">Test Speed</button>
       </div>
@@ -44,7 +45,7 @@
     <main class="landing-hero">
       <div class="hero-badge">
         <span class="badge-dot"></span>
-        <span>⚡ Live Global Internet Map & Benchmark</span>
+        <span>Live Global Internet Map & Benchmark</span>
       </div>
 
       <h1 class="hero-title">
@@ -77,8 +78,8 @@
       <div class="card landing-action-card">
         <div class="input-row">
           <div class="field">
-            <label for="isp-input">ISP <span class="opt">optional</span></label>
-            <input type="text" id="isp-input" placeholder="Comcast, Verizon, Ethio Telecom…" maxlength="40" autocomplete="off" />
+            <label for="isp-input">ISP <span class="opt">auto-detected if empty</span></label>
+            <input type="text" id="isp-input" placeholder="Auto-detected (or enter manually)" maxlength="40" autocomplete="off" />
           </div>
           <div class="field">
             <label for="nick-input">Nickname <span class="opt">optional</span></label>
@@ -101,17 +102,23 @@
       <!-- Feature Grid -->
       <div class="feature-grid">
         <div class="feature-card">
-          <div class="feat-icon">⚡</div>
+          <div class="feat-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+          </div>
           <h3>Edge Testing</h3>
           <p>Direct 25 MB streaming download & 10 MB upload tests benchmarked against edge infrastructure.</p>
         </div>
         <div class="feature-card">
-          <div class="feat-icon">🤖</div>
+          <div class="feat-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="2"/><path d="M16.24 7.76a6 6 0 0 1 0 8.49m-8.48-.01a6 6 0 0 1 0-8.49m11.31-2.83a10 10 0 0 1 0 14.14m-14.14 0a10 10 0 0 1 0-14.14"/></svg>
+          </div>
           <h3>Auto-Detection</h3>
           <p>Silently identifies Home WiFi, Office WiFi, 4G, 5G, Fiber, Cable, or Satellite without manual entry.</p>
         </div>
         <div class="feature-card">
-          <div class="feat-icon">🌐</div>
+          <div class="feat-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+          </div>
           <h3>Global Speed Map</h3>
           <p>Explore live pin markers, heatmaps, and tier filters (Ultra, Fast, Mid, Slow) across every continent.</p>
         </div>
@@ -129,6 +136,10 @@
 <section id="screen-test" class="screen">
   <div class="scene"><div class="orb o1"></div><div class="orb o2"></div></div>
   <div class="card test-card" id="test-card">
+    <button class="test-back-btn" id="btn-cancel-test" title="Cancel test and return home">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+      <span>Cancel</span>
+    </button>
 
     <!-- Gauge (shown during test) -->
     <div class="gauge" id="gauge-wrap">
@@ -219,7 +230,17 @@
           <span class="rv-sl">Location</span>
         </div>
       </div>
-      <p class="rv-note" id="rv-note">Saving to global map…</p>
+      <div class="rv-actions">
+        <button id="btn-rv-map" class="btn-primary btn-hero">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"></polygon><line x1="8" y1="2" x2="8" y2="18"></line><line x1="16" y1="6" x2="16" y2="22"></line></svg>
+          <span>View On Global Map</span>
+        </button>
+        <button id="btn-share-card" class="btn-ghost btn-hero">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+          <span>Share Card</span>
+        </button>
+      </div>
+      <p class="rv-note" id="rv-note">Saved to global map</p>
     </div>
 
   </div>
@@ -251,22 +272,143 @@
       <button class="bar-btn" id="btn-heat" title="Heatmap">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="3" fill="currentColor"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
       </button>
+      <button class="bar-btn" id="btn-bar-leaderboard" title="Leaderboard">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
+      </button>
       <div class="bar-sep"></div>
       <button class="bar-btn" id="btn-retest" title="New test">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+      </button>
+      <button class="bar-btn" id="btn-map-home" title="Return Home">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
       </button>
     </div>
   </header>
 
   <div class="map-legend" id="map-legend">
-    <span class="leg-label">Filter</span>
-    <span class="leg-item" data-tier="slow"><span class="leg-dot slow"></span>Slow</span>
-    <span class="leg-item" data-tier="mid"><span class="leg-dot mid"></span>Mid</span>
-    <span class="leg-item" data-tier="fast"><span class="leg-dot fast"></span>Fast</span>
-    <span class="leg-item" data-tier="ultra"><span class="leg-dot ultra"></span>Ultra</span>
-    <button class="leg-clear" id="leg-clear" title="Clear filters">✕ All</button>
+    <div class="leg-header">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+      <span class="leg-label">Filter Tiers</span>
+    </div>
+    <div class="leg-items">
+      <button class="leg-item" data-tier="slow"><span class="leg-dot slow"></span>Slow &lt;5</button>
+      <button class="leg-item" data-tier="mid"><span class="leg-dot mid"></span>Mid 5-25</button>
+      <button class="leg-item" data-tier="fast"><span class="leg-dot fast"></span>Fast 25-100</button>
+      <button class="leg-item" data-tier="ultra"><span class="leg-dot ultra"></span>Ultra 100+</button>
+    </div>
+    <button class="leg-clear" id="leg-clear" title="Reset all filters">Reset</button>
   </div>
 </section>
+
+<!-- ═══════════════════════════ SCREEN: LEADERBOARD ══════════════════════ -->
+<section id="screen-leaderboard" class="screen lb-screen">
+  <div class="scene"><div class="orb o1"></div><div class="orb o2"></div></div>
+  <div class="lb-page-container">
+    <header class="lb-page-header">
+      <div class="wordmark">
+        <svg width="22" height="22" viewBox="0 0 32 32" fill="none">
+          <circle cx="16" cy="16" r="14.5" stroke="#f59e0b" stroke-width="1.4" opacity=".55"/>
+          <ellipse cx="16" cy="16" rx="5.5" ry="14.5" stroke="#f59e0b" stroke-width="1.4" opacity=".38"/>
+          <line x1="1.5" y1="16" x2="30.5" y2="16" stroke="#f59e0b" stroke-width="1.4" opacity=".38"/>
+          <circle cx="16" cy="16" r="2.5" fill="#f59e0b"/>
+        </svg>
+        <span>SpeedMap</span>
+      </div>
+      <div class="nav-actions">
+        <button id="btn-lb-back-map" class="nav-link">View Map</button>
+        <button id="btn-lb-test" class="btn-primary btn-sm">Test Speed</button>
+      </div>
+    </header>
+
+    <main class="lb-page-main">
+      <div class="lb-title-wrap">
+        <h1 class="lb-page-title">Global Internet Intelligence & Leaderboards</h1>
+        <p class="lb-page-sub">Real-time throughput rankings calculated across live speed test submissions worldwide</p>
+      </div>
+
+      <!-- Summary analytics highlights bar -->
+      <div class="lb-summary-grid" id="lb-summary-grid">
+        <div class="lb-stat-box box-peak">
+          <div class="lb-sb-header">
+            <div class="lb-sb-icon icon-amber">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            </div>
+            <span class="lb-sb-label">PEAK RECORDED</span>
+          </div>
+          <span class="lb-sb-val" id="lb-stat-peak">0.0 <small>Mbps</small></span>
+          <div class="lb-sb-footer">
+            <span class="lb-sb-badge" id="lb-stat-peak-sub">Global benchmark</span>
+          </div>
+        </div>
+
+        <div class="lb-stat-box box-isps">
+          <div class="lb-sb-header">
+            <div class="lb-sb-icon icon-blue">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect><rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect><line x1="6" y1="6" x2="6.01" y2="6"></line><line x1="6" y1="18" x2="6.01" y2="18"></line></svg>
+            </div>
+            <span class="lb-sb-label">TOTAL ISPS</span>
+          </div>
+          <span class="lb-sb-val" id="lb-stat-isps">0</span>
+          <div class="lb-sb-footer">
+            <span class="lb-sb-sub">Active Providers Mapped</span>
+          </div>
+        </div>
+
+        <div class="lb-stat-box box-ping">
+          <div class="lb-sb-header">
+            <div class="lb-sb-icon icon-green">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+            </div>
+            <span class="lb-sb-label">AVG LATENCY</span>
+          </div>
+          <span class="lb-sb-val" id="lb-stat-ping">0 <small>ms</small></span>
+          <div class="lb-sb-footer">
+            <span class="lb-sb-sub">Global Ping Average</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="lb-tabs">
+        <button class="lb-tab active" data-tab="isps">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect><rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect><line x1="6" y1="6" x2="6.01" y2="6"></line><line x1="6" y1="18" x2="6.01" y2="18"></line></svg>
+          <span>Fastest ISPs</span>
+        </button>
+        <button class="lb-tab" data-tab="cities">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+          <span>Top Locations</span>
+        </button>
+        <button class="lb-tab" data-tab="tiers">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+          <span>Speed Tiers</span>
+        </button>
+      </div>
+
+      <div class="lb-content" id="lb-content">
+        <!-- Rendered via JS -->
+      </div>
+    </main>
+  </div>
+</section>
+
+<!-- MODAL: SHARE CARD -->
+<div id="modal-share" class="modal-overlay">
+  <div class="modal-card share-card-modal">
+    <div class="modal-header">
+      <h2>Your Speed Card</h2>
+      <button class="modal-close" id="close-share">✕</button>
+    </div>
+    <div class="modal-body share-body">
+      <div class="share-preview-wrap">
+        <img id="share-img-preview" alt="Speed Card Preview" />
+      </div>
+      <div class="share-actions">
+        <button id="btn-download-card" class="btn-primary">Download Card Image</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<canvas id="share-canvas" width="600" height="340" style="display:none"></canvas>
 
 <!-- Toast -->
 <div id="toast" class="toast"></div>

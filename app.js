@@ -97,9 +97,10 @@ function allResults() {
 var activeTiers = {}; // { slow:true, mid:true, ... }
 
 function speedTierName(mbps) {
-  if (mbps >= 200) return 'ultra';
-  if (mbps >= 50)  return 'fast';
-  if (mbps >= 10)  return 'mid';
+  var num = parseFloat(mbps) || 0;
+  if (num >= 100) return 'ultra';
+  if (num >= 25)  return 'fast';
+  if (num >= 5)   return 'mid';
   return 'slow';
 }
 
@@ -133,10 +134,10 @@ function showScreen(id) {
 
 // ── Network detection ────────────────────────────────
 var NET_LABELS = {
-  'home-wifi': '🏠 Home WiFi', 'office-wifi': '🏢 Office WiFi',
+  'home-wifi': 'Home WiFi', 'office-wifi': 'Office WiFi',
   '4g': '4G LTE', '5g': '5G', '3g': '3G',
-  'fiber': '⚡ Fiber', 'cable': '🔌 Cable',
-  'satellite': '🛰 Satellite', 'unknown': 'Unknown'
+  'fiber': 'Fiber', 'cable': 'Cable',
+  'satellite': 'Satellite', 'unknown': 'Unknown'
 };
 
 function detectNetwork() {
@@ -166,14 +167,32 @@ function getLocation() {
   });
 }
 
-function ipGeoFallback(resolve) {
-  fetch('https://ipapi.co/json/', { cache: 'no-store' })
+function detectIspAndCity() {
+  return fetch('https://ipapi.co/json/', { cache: 'no-store' })
     .then(function(r) { return r.json(); })
     .then(function(d) {
-      state.city = d.city || '';
-      resolve({ lat: parseFloat(d.latitude), lng: parseFloat(d.longitude) });
+      if (d) {
+        if (!state.isp) {
+          var rawIsp = d.org || d.asn || d.isp || '';
+          state.isp = rawIsp.replace(/^AS\d+\s*/i, '').trim();
+        }
+        if (!state.city && d.city) {
+          state.city = d.city;
+        }
+      }
+      return d;
     })
-    .catch(function() { resolve(null); });
+    .catch(function() { return null; });
+}
+
+function ipGeoFallback(resolve) {
+  detectIspAndCity().then(function(d) {
+    if (d && d.latitude && d.longitude) {
+      resolve({ lat: parseFloat(d.latitude), lng: parseFloat(d.longitude) });
+    } else {
+      resolve(null);
+    }
+  });
 }
 
 function reverseGeocode(lat, lng) {
@@ -320,11 +339,15 @@ function runTest() {
   state.networkType = detectNetwork();
   setStep('s-network', 'done', NET_LABELS[state.networkType] || state.networkType);
 
-  // Step 2: Location
+  // Step 2: Location & ISP Auto-Detection
   setStep('s-location', 'active', '—');
-  setStatus('Getting location…');
+  setStatus('Getting location & network ISP…');
 
-  getLocation().then(function(loc) {
+  Promise.all([
+    getLocation(),
+    detectIspAndCity()
+  ]).then(function(results) {
+    var loc = results[0];
     state.location = loc;
     if (!loc) {
       setStep('s-location', 'error', 'Unavailable');
@@ -433,11 +456,11 @@ function runTest() {
       if (rvNet)  rvNet.textContent  = NET_LABELS[state.networkType] || '—';
       if (rvCity) rvCity.textContent = state.city || 'Unknown';
       if (rvNote) rvNote.textContent = ok
-        ? '🌍 Saved to global map — opening now…'
-        : '💾 Saved locally — opening map…';
+        ? 'Saved to global map — opening now…'
+        : 'Saved locally — opening map…';
       if (rv) rv.classList.add('show');
 
-      showToast(ok ? '🌍 Result saved to global map' : '💾 Saved locally', ok ? 'ok' : 'warn');
+      showToast(ok ? 'Result saved to global map' : 'Saved locally', ok ? 'ok' : 'warn');
 
       return wait(2200);
     });
@@ -488,7 +511,7 @@ function goToMap() {
     renderMarkers(results);
     updateStats(results);
     if (!results || results.length === 0) {
-      showToast('⚡ No tests recorded yet! Run a test to be the first on the map.', 'warn');
+      showToast('No tests recorded yet. Run a test to contribute!', 'warn');
     }
   });
 }
@@ -521,7 +544,7 @@ function renderMarkers(results) {
       emptyBanner = document.createElement('div');
       emptyBanner.id = 'map-empty-banner';
       emptyBanner.className = 'map-empty-banner';
-      emptyBanner.innerHTML = '<span>⚡ No speed tests mapped yet.</span> <button onclick="startTest()">Be the first to contribute!</button>';
+      emptyBanner.innerHTML = '<span>No speed tests mapped yet.</span> <button onclick="startTest()">Be the first to contribute!</button>';
       document.getElementById('screen-map').appendChild(emptyBanner);
     }
     emptyBanner.style.display = 'flex';
@@ -554,12 +577,12 @@ function renderMarkers(results) {
       var nick = r.nickname || 'Anonymous';
       var net  = NET_LABELS[r.networkType] || r.networkType || '?';
       var isp  = r.isp  ? '<span>' + r.isp + '</span>'      : '';
-      var city = r.city ? '<span>📍 ' + r.city + '</span>'  : '';
+      var city = r.city ? '<span>' + r.city + '</span>'     : '';
       var ago  = timeAgo(r.ts || r.timestamp);
       var foot = [isp, city].filter(Boolean).join(' · ');
 
       var tierTagClass = 'pop-tier-' + tier;
-      var tierTagLabel = tier === 'ultra' ? '⚡ Ultra' : tier === 'fast' ? '🟢 Fast' : tier === 'mid' ? '🟠 Mid' : '🔴 Slow';
+      var tierTagLabel = tier === 'ultra' ? 'Ultra' : tier === 'fast' ? 'Fast' : tier === 'mid' ? 'Mid' : 'Slow';
 
       m.bindPopup(
         '<div class="pop">' +
@@ -584,7 +607,7 @@ function renderMarkers(results) {
               '<span class="pop-mv">' + (r.upload || '—') + '</span>' +
             '</div>' +
             '<div class="pop-m pop-m-ping">' +
-              '<span class="pop-ml">⚡ Ping</span>' +
+              '<span class="pop-ml">Ping</span>' +
               '<span class="pop-mv">' + (r.ping ? r.ping + ' ms' : '—') + '</span>' +
             '</div>' +
           '</div>' +
@@ -613,7 +636,7 @@ function renderMarkers(results) {
     var uDl = state.download || 0;
     var uTier = speedTierName(uDl);
     var uTagClass = 'pop-tier-' + uTier;
-    var uTagLabel = uTier === 'ultra' ? '⚡ Ultra' : uTier === 'fast' ? '🟢 Fast' : uTier === 'mid' ? '🟠 Mid' : '🔴 Slow';
+    var uTagLabel = uTier === 'ultra' ? 'Ultra' : uTier === 'fast' ? 'Fast' : uTier === 'mid' ? 'Mid' : 'Slow';
 
     var userPopup =
       '<div class="pop">' +
@@ -638,11 +661,11 @@ function renderMarkers(results) {
             '<span class="pop-mv">' + (state.upload || '—') + '</span>' +
           '</div>' +
           '<div class="pop-m pop-m-ping">' +
-            '<span class="pop-ml">⚡ Ping</span>' +
+            '<span class="pop-ml">Ping</span>' +
             '<span class="pop-mv">' + (state.ping ? state.ping + ' ms' : '—') + '</span>' +
           '</div>' +
         '</div>' +
-        '<div class="pop-footer"><span>📍 ' + (state.city || 'Your location') + '</span><span>just now</span></div>' +
+        '<div class="pop-footer"><span>' + (state.city || 'Your location') + '</span><span>just now</span></div>' +
       '</div>';
     L.marker([state.location.lat, state.location.lng], { icon })
      .bindPopup(userPopup, { maxWidth: 260, minWidth: 220 })
@@ -706,6 +729,307 @@ function showToast(msg, type) {
   toastTimer = setTimeout(function() { el.classList.remove('show'); }, 4000);
 }
 
+// ── Leaderboard Screen & Skeleton UI ────────────────
+var currentLbTab = 'isps';
+var lbCurrentPage = 1;
+var ITEMS_PER_PAGE = 3;
+
+function openLeaderboard() {
+  lbCurrentPage = 1;
+  showScreen('screen-leaderboard');
+  renderLeaderboard(currentLbTab);
+}
+
+function renderSkeletons() {
+  var html = '<div class="lb-list-rich">';
+  for (var i = 0; i < 5; i++) {
+    html += '<div class="skeleton-box lb-skeleton-row"></div>';
+  }
+  html += '</div>';
+  return html;
+}
+
+function renderLeaderboard(tab, page) {
+  if (tab !== currentLbTab) {
+    currentLbTab = tab;
+    lbCurrentPage = 1;
+  } else if (page !== undefined) {
+    lbCurrentPage = page;
+  }
+
+  document.querySelectorAll('.lb-tab').forEach(function(el) {
+    el.classList.toggle('active', el.dataset.tab === currentLbTab);
+  });
+
+  var contentEl = document.getElementById('lb-content');
+  if (contentEl) contentEl.innerHTML = renderSkeletons();
+
+  allResults().then(function(results) {
+    if (!contentEl) return;
+
+    var list = results || [];
+
+    // Populate summary header metrics
+    var peakVal = 0, peakObj = null;
+    var ispsSet = {};
+    var totalPing = 0, pingCount = 0;
+
+    list.forEach(function(r) {
+      if (r.download > peakVal) { peakVal = r.download; peakObj = r; }
+      if (r.isp && r.isp.trim() && r.isp.trim().toLowerCase() !== 'unknown' && r.isp.trim().toLowerCase() !== 'unknown provider') {
+        ispsSet[r.isp.trim().toLowerCase()] = true;
+      }
+      if (r.ping > 0) { totalPing += r.ping; pingCount++; }
+    });
+
+    var peakEl = document.getElementById('lb-stat-peak');
+    var peakSub = document.getElementById('lb-stat-peak-sub');
+    var ispsEl = document.getElementById('lb-stat-isps');
+    var pingEl = document.getElementById('lb-stat-ping');
+
+    if (peakEl) animateNumber(peakEl, peakVal || 0, 800, 1);
+    if (peakSub) {
+      var locText = peakObj ? [peakObj.city, peakObj.isp || NET_LABELS[peakObj.networkType]].filter(Boolean).join(' · ') : 'Global Benchmark';
+      peakSub.textContent = locText || 'Global Benchmark';
+    }
+    var totalIspsCount = Object.keys(ispsSet).length || (list.length ? 1 : 0);
+    if (ispsEl) animateNumber(ispsEl, totalIspsCount, 800, 0);
+
+    var avgPingVal = pingCount ? Math.round(totalPing / pingCount) : 0;
+    if (pingEl) animateNumber(pingEl, avgPingVal, 800, 0);
+
+    if (!list.length) {
+      contentEl.innerHTML = '<p class="rv-note">No test data recorded yet. Run a speed test to contribute!</p>';
+      return;
+    }
+
+    // ── TAB: Speed Tiers Distribution ──────────────────
+    if (currentLbTab === 'tiers') {
+      var tiers = { ultra: 0, fast: 0, mid: 0, slow: 0 };
+      list.forEach(function(r) {
+        var t = speedTierName(r.download || 0);
+        tiers[t]++;
+      });
+      var total = list.length;
+
+      contentEl.innerHTML =
+        '<div class="tier-dist-grid">' +
+          '<div class="tier-dist-card">' +
+            '<div class="tdc-header"><span class="tdc-title" style="color:#38bdf8">Ultra (100+ Mbps)</span><span class="pop-tier-tag pop-tier-ultra">Ultra</span></div>' +
+            '<div class="tdc-pct">' + Math.round((tiers.ultra/total)*100) + '%</div>' +
+            '<div class="tdc-count">' + tiers.ultra + ' of ' + total + ' tests</div>' +
+          '</div>' +
+          '<div class="tier-dist-card">' +
+            '<div class="tdc-header"><span class="tdc-title" style="color:#22c55e">Fast (25-100 Mbps)</span><span class="pop-tier-tag pop-tier-fast">Fast</span></div>' +
+            '<div class="tdc-pct">' + Math.round((tiers.fast/total)*100) + '%</div>' +
+            '<div class="tdc-count">' + tiers.fast + ' of ' + total + ' tests</div>' +
+          '</div>' +
+          '<div class="tier-dist-card">' +
+            '<div class="tdc-header"><span class="tdc-title" style="color:#f97316">Mid (5-25 Mbps)</span><span class="pop-tier-tag pop-tier-mid">Mid</span></div>' +
+            '<div class="tdc-pct">' + Math.round((tiers.mid/total)*100) + '%</div>' +
+            '<div class="tdc-count">' + tiers.mid + ' of ' + total + ' tests</div>' +
+          '</div>' +
+          '<div class="tier-dist-card">' +
+            '<div class="tdc-header"><span class="tdc-title" style="color:#ef4444">Slow (<5 Mbps)</span><span class="pop-tier-tag pop-tier-slow">Slow</span></div>' +
+            '<div class="tdc-pct">' + Math.round((tiers.slow/total)*100) + '%</div>' +
+            '<div class="tdc-count">' + tiers.slow + ' of ' + total + ' tests</div>' +
+          '</div>' +
+        '</div>';
+      return;
+    }
+
+    // ── TAB: ISPs or Cities (with Unknown Filter & Pagination) ──
+    var groups = {};
+    list.forEach(function(r) {
+      if (currentLbTab === 'isps') {
+        if (!r.isp || !r.isp.trim() || r.isp.trim().toLowerCase() === 'unknown' || r.isp.trim().toLowerCase() === 'unknown provider') return;
+      }
+      if (currentLbTab === 'cities') {
+        if (!r.city || !r.city.trim() || r.city.trim().toLowerCase() === 'unknown' || r.city.trim().toLowerCase() === 'unknown location') return;
+      }
+      var key = currentLbTab === 'isps' ? r.isp.trim() : r.city.trim();
+      if (!groups[key]) groups[key] = { count: 0, totalDl: 0, totalUl: 0, totalPing: 0, pings: 0 };
+      groups[key].count++;
+      groups[key].totalDl += (r.download || 0);
+      groups[key].totalUl += (r.upload || 0);
+      if (r.ping > 0) { groups[key].totalPing += r.ping; groups[key].pings++; }
+    });
+
+    var sorted = Object.keys(groups).map(function(k) {
+      var g = groups[k];
+      return {
+        name: k,
+        count: g.count,
+        avgDl: parseFloat((g.totalDl / g.count).toFixed(1)),
+        avgUl: parseFloat((g.totalUl / g.count).toFixed(1)),
+        avgPing: g.pings ? Math.round(g.totalPing / g.pings) : null
+      };
+    }).sort(function(a, b) { return b.avgDl - a.avgDl; });
+
+    if (!sorted.length) {
+      contentEl.innerHTML = '<p class="rv-note">No verified ' + (currentLbTab === 'isps' ? 'ISPs' : 'locations') + ' recorded yet.</p>';
+      return;
+    }
+
+    var totalPages = Math.max(1, Math.ceil(sorted.length / ITEMS_PER_PAGE));
+    if (lbCurrentPage > totalPages) lbCurrentPage = totalPages;
+    if (lbCurrentPage < 1) lbCurrentPage = 1;
+
+    var startIdx = (lbCurrentPage - 1) * ITEMS_PER_PAGE;
+    var pageItems = sorted.slice(startIdx, startIdx + ITEMS_PER_PAGE);
+    var topDl = sorted.length ? sorted[0].avgDl : 1;
+
+    var html = '<div class="lb-list-rich">';
+    pageItems.forEach(function(item, idx) {
+      var absoluteRank = startIdx + idx;
+      var rankClass = absoluteRank === 0 ? 'rank-1' : absoluteRank === 1 ? 'rank-2' : absoluteRank === 2 ? 'rank-3' : '';
+      var pct = Math.max(10, Math.min(100, Math.round((item.avgDl / (topDl || 1)) * 100)));
+      var tier = speedTierName(item.avgDl);
+      var tierTagClass = 'pop-tier-' + tier;
+      var tierTagLabel = tier.toUpperCase();
+
+      html +=
+        '<div class="lb-row-rich">' +
+          '<div class="lb-row-top">' +
+            '<span class="lb-rank-badge ' + rankClass + '">#' + (absoluteRank + 1) + '</span>' +
+            '<span class="lb-row-title">' + item.name + '</span>' +
+            '<span class="pop-tier-tag ' + tierTagClass + '">' + tierTagLabel + '</span>' +
+          '</div>' +
+          '<div class="lb-bar-wrap">' +
+            '<div class="lb-bar-fill" style="width:' + pct + '%"></div>' +
+          '</div>' +
+          '<div class="lb-row-stats">' +
+            '<span class="lb-rs-item">↓ DL <strong>' + item.avgDl + ' Mbps</strong></span>' +
+            '<span class="lb-rs-item">↑ UL <strong>' + item.avgUl + ' Mbps</strong></span>' +
+            '<span class="lb-rs-item">Ping <strong>' + (item.avgPing ? item.avgPing + ' ms' : '—') + '</strong></span>' +
+            '<span class="lb-rs-item" style="color:var(--t3)">' + item.count + ' test' + (item.count > 1 ? 's' : '') + '</span>' +
+          '</div>' +
+        '</div>';
+    });
+    html += '</div>';
+
+    // Pagination controls footer
+    html +=
+      '<div class="lb-pagination">' +
+        '<button id="lb-page-prev" class="lb-page-btn" ' + (lbCurrentPage <= 1 ? 'disabled' : '') + '>← Previous</button>' +
+        '<span class="lb-page-info">Page ' + lbCurrentPage + ' of ' + totalPages + '</span>' +
+        '<button id="lb-page-next" class="lb-page-btn" ' + (lbCurrentPage >= totalPages ? 'disabled' : '') + '>Next →</button>' +
+      '</div>';
+
+    contentEl.innerHTML = html;
+
+    // Attach pagination button listeners
+    var prevBtn = document.getElementById('lb-page-prev');
+    var nextBtn = document.getElementById('lb-page-next');
+    if (prevBtn) prevBtn.addEventListener('click', function() { renderLeaderboard(currentLbTab, lbCurrentPage - 1); });
+    if (nextBtn) nextBtn.addEventListener('click', function() { renderLeaderboard(currentLbTab, lbCurrentPage + 1); });
+  });
+}
+
+// ── Share Speed Card Generator ───────────────────────
+function openShareModal() {
+  var canvas = document.getElementById('share-canvas');
+  if (!canvas) return;
+  var ctx = canvas.getContext('2d');
+
+  // Background
+  ctx.fillStyle = '#07080e';
+  ctx.fillRect(0, 0, 600, 340);
+
+  // Border & Grid overlay
+  ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(12, 12, 576, 316);
+
+  // Header Brand
+  ctx.fillStyle = '#f59e0b';
+  ctx.font = 'bold 20px Lexend, sans-serif';
+  ctx.fillText('SpeedMap', 36, 50);
+
+  ctx.fillStyle = '#8a8278';
+  ctx.font = '500 12px Lexend, sans-serif';
+  ctx.fillText('GLOBAL INTERNET BENCHMARK', 36, 68);
+
+  // Main Speed Hero
+  var dlVal = state.download !== null ? state.download.toFixed(1) : '—';
+  ctx.fillStyle = '#ede9e0';
+  ctx.font = '800 64px Lexend, sans-serif';
+  ctx.fillText(dlVal, 36, 150);
+
+  ctx.fillStyle = '#8a8278';
+  ctx.font = '600 18px Lexend, sans-serif';
+  var numWidth = ctx.measureText(dlVal).width;
+  ctx.fillText('Mbps Download', 46 + numWidth + 10, 150);
+
+  // Stat Grid
+  var ulVal = state.upload !== null ? state.upload.toFixed(1) + ' Mbps' : '—';
+  var pingVal = state.ping !== null ? state.ping + ' ms' : '—';
+  var netVal = NET_LABELS[state.networkType] || state.networkType || '—';
+  var locVal = state.city || 'Global User';
+
+  // Box 1: Upload
+  ctx.fillStyle = 'rgba(168,85,247,0.08)';
+  ctx.fillRect(36, 185, 120, 60);
+  ctx.strokeStyle = 'rgba(168,85,247,0.22)';
+  ctx.strokeRect(36, 185, 120, 60);
+  ctx.fillStyle = '#c084fc';
+  ctx.font = '700 10px Lexend, sans-serif';
+  ctx.fillText('UPLOAD', 46, 204);
+  ctx.fillStyle = '#e9d5ff';
+  ctx.font = '700 16px Lexend, sans-serif';
+  ctx.fillText(ulVal, 46, 230);
+
+  // Box 2: Ping
+  ctx.fillStyle = 'rgba(245,158,11,0.08)';
+  ctx.fillRect(168, 185, 120, 60);
+  ctx.strokeStyle = 'rgba(245,158,11,0.22)';
+  ctx.strokeRect(168, 185, 120, 60);
+  ctx.fillStyle = '#fbbf24';
+  ctx.font = '700 10px Lexend, sans-serif';
+  ctx.fillText('PING', 178, 204);
+  ctx.fillStyle = '#fde68a';
+  ctx.font = '700 16px Lexend, sans-serif';
+  ctx.fillText(pingVal, 178, 230);
+
+  // Box 3: Network
+  ctx.fillStyle = 'rgba(255,255,255,0.03)';
+  ctx.fillRect(300, 185, 264, 60);
+  ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+  ctx.strokeRect(300, 185, 264, 60);
+  ctx.fillStyle = '#8a8278';
+  ctx.font = '700 10px Lexend, sans-serif';
+  ctx.fillText('NETWORK & LOCATION', 310, 204);
+  ctx.fillStyle = '#ede9e0';
+  ctx.font = '600 14px Lexend, sans-serif';
+  ctx.fillText(netVal + ' · ' + locVal, 310, 230);
+
+  // Footer
+  ctx.fillStyle = '#8a8278';
+  ctx.font = '500 11px Lexend, sans-serif';
+  ctx.fillText('Verified on speedmap-2a75c.web.app', 36, 298);
+
+  // Convert to image preview
+  var imgPreview = document.getElementById('share-img-preview');
+  if (imgPreview) imgPreview.src = canvas.toDataURL('image/png');
+
+  var modal = document.getElementById('modal-share');
+  if (modal) modal.classList.add('active');
+}
+
+function closeShareModal() {
+  var modal = document.getElementById('modal-share');
+  if (modal) modal.classList.remove('active');
+}
+
+function downloadSpeedCard() {
+  var canvas = document.getElementById('share-canvas');
+  if (!canvas) return;
+  var link = document.createElement('a');
+  link.download = 'SpeedMap-Card.png';
+  link.href = canvas.toDataURL('image/png');
+  link.click();
+}
+
 // ── Wire up all buttons ───────────────────────────────
 document.addEventListener('DOMContentLoaded', function() {
   initFirebase();
@@ -721,6 +1045,26 @@ document.addEventListener('DOMContentLoaded', function() {
   var btnHeat    = document.getElementById('btn-heat');
   var btnRetest  = document.getElementById('btn-retest');
 
+  var btnNavLb   = document.getElementById('btn-nav-leaderboard');
+  var btnBarLb   = document.getElementById('btn-bar-leaderboard');
+  var btnShare   = document.getElementById('btn-share-card');
+  var closeShare = document.getElementById('close-share');
+  var btnDlCard  = document.getElementById('btn-download-card');
+
+  var btnLbBackMap  = document.getElementById('btn-lb-back-map');
+  var btnLbTest     = document.getElementById('btn-lb-test');
+
+  if (btnLbBackMap)  btnLbBackMap.addEventListener('click', goToMap);
+  if (btnLbTest)     btnLbTest.addEventListener('click', startTest);
+
+  var btnCancel = document.getElementById('btn-cancel-test');
+  var btnRvMap  = document.getElementById('btn-rv-map');
+  var btnMapHome= document.getElementById('btn-map-home');
+
+  if (btnCancel) btnCancel.addEventListener('click', function() { showScreen('screen-welcome'); });
+  if (btnRvMap)  btnRvMap.addEventListener('click', goToMap);
+  if (btnMapHome)btnMapHome.addEventListener('click', function() { showScreen('screen-welcome'); });
+
   if (btnStart)   btnStart.addEventListener('click', startTest);
   if (btnNavTest) btnNavTest.addEventListener('click', startTest);
   if (btnViewMap) btnViewMap.addEventListener('click', goToMap);
@@ -728,6 +1072,25 @@ document.addEventListener('DOMContentLoaded', function() {
   if (btnMarkers) btnMarkers.addEventListener('click', function() { toggleLayer('markers'); });
   if (btnHeat)    btnHeat.addEventListener('click', function() { toggleLayer('heat'); });
   if (btnRetest)  btnRetest.addEventListener('click', function() { showScreen('screen-welcome'); });
+
+  if (btnNavLb)   btnNavLb.addEventListener('click', openLeaderboard);
+  if (btnBarLb)   btnBarLb.addEventListener('click', openLeaderboard);
+
+  if (btnShare)   btnShare.addEventListener('click', openShareModal);
+  if (closeShare) closeShare.addEventListener('click', closeShareModal);
+  if (btnDlCard)  btnDlCard.addEventListener('click', downloadSpeedCard);
+
+  // Esc key listener to close modals
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+      closeLeaderboard();
+      closeShareModal();
+    }
+  });
+
+  document.querySelectorAll('.lb-tab').forEach(function(tabEl) {
+    tabEl.addEventListener('click', function() { renderLeaderboard(tabEl.dataset.tab); });
+  });
 
   // Navigation back to Landing Page on logo/brand click
   document.querySelectorAll('.wordmark, .bar-brand').forEach(function(el) {
