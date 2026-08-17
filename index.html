@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SpeedMap — Global Internet Speed Map</title>
+  <meta name="description" content="Test your internet speed and see live connection performance mapped across the world." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%2307080e'/><circle cx='16' cy='16' r='12' stroke='%23f59e0b' stroke-width='1.8' fill='none' opacity='0.75'/><ellipse cx='16' cy='16' rx='4.5' ry='12' stroke='%23f59e0b' stroke-width='1.8' fill='none' opacity='0.5'/><line x1='4' y1='16' x2='28' y2='16' stroke='%23f59e0b' stroke-width='1.8' opacity='0.5'/><circle cx='16' cy='16' r='3.2' fill='%23f59e0b'/></svg>" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="style.css" />
+  <!-- Number Flow web component -->
+  <script type="module">
+    import 'https://cdn.jsdelivr.net/npm/number-flow@latest/+esm';
+  </script>
+</head>
+<body>
+
+<!-- ═══════════════════════════ SCREEN: LANDING PAGE ═══════════════════════════ -->
+<section id="screen-welcome" class="screen active landing-screen">
+  <div class="scene">
+    <div class="grid-bg"></div>
+    <div class="orb o1"></div>
+    <div class="orb o2"></div>
+  </div>
+
+  <div class="landing-container">
+    <!-- Navbar -->
+    <header class="landing-nav">
+      <div class="wordmark">
+        <svg width="28" height="28" viewBox="0 0 32 32" fill="none">
+          <circle cx="16" cy="16" r="14.5" stroke="#f59e0b" stroke-width="1.4" opacity=".55"/>
+          <ellipse cx="16" cy="16" rx="5.5" ry="14.5" stroke="#f59e0b" stroke-width="1.4" opacity=".38"/>
+          <line x1="1.5" y1="16" x2="30.5" y2="16" stroke="#f59e0b" stroke-width="1.4" opacity=".38"/>
+          <circle cx="16" cy="16" r="2.5" fill="#f59e0b"/>
+        </svg>
+        <span>SpeedMap</span>
+      </div>
+      <div class="nav-actions">
+        <button id="btn-nav-map" class="nav-link">View Map</button>
+        <button id="btn-nav-test" class="btn-primary btn-sm">Test Speed</button>
+      </div>
+    </header>
+
+    <!-- Hero Section -->
+    <main class="landing-hero">
+      <div class="hero-badge">
+        <span class="badge-dot"></span>
+        <span>⚡ Live Global Internet Map & Benchmark</span>
+      </div>
+
+      <h1 class="hero-title">
+        Visualize the world’s<br />
+        <em>internet in real time.</em>
+      </h1>
+
+      <p class="hero-sub">
+        Beyond a simple speed test. Auto-detect your connection type, measure streaming throughput, and place your pin on the live global map.
+      </p>
+
+      <!-- Live Global Counter Bar -->
+      <div class="global-stats landing-stats">
+        <div class="gstat">
+          <span class="gstat-n" id="global-count">
+            <number-flow id="nf-count" value="0"></number-flow>
+          </span>
+          <span class="gstat-l">Tests Mapped</span>
+        </div>
+        <div class="gstat-sep"></div>
+        <div class="gstat">
+          <span class="gstat-n" id="global-avg">
+            <number-flow id="nf-avg" value="0" format='{"maximumFractionDigits":1}'></number-flow>
+          </span>
+          <span class="gstat-l">Avg Download Mbps</span>
+        </div>
+      </div>
+
+      <!-- Main Action Card -->
+      <div class="card landing-action-card">
+        <div class="input-row">
+          <div class="field">
+            <label for="isp-input">ISP <span class="opt">optional</span></label>
+            <input type="text" id="isp-input" placeholder="Comcast, Verizon, Ethio Telecom…" maxlength="40" autocomplete="off" />
+          </div>
+          <div class="field">
+            <label for="nick-input">Nickname <span class="opt">optional</span></label>
+            <input type="text" id="nick-input" placeholder="Anonymous" maxlength="24" autocomplete="off" />
+          </div>
+        </div>
+
+        <div class="hero-cta-buttons">
+          <button id="btn-start" class="btn-primary btn-hero">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" fill="currentColor"/></svg>
+            <span>Test & Map My Connection</span>
+          </button>
+          <button id="btn-viewmap" class="btn-ghost btn-hero">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"></polygon><line x1="8" y1="2" x2="8" y2="18"></line><line x1="16" y1="6" x2="16" y2="22"></line></svg>
+            <span>Explore Live Map</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Feature Grid -->
+      <div class="feature-grid">
+        <div class="feature-card">
+          <div class="feat-icon">⚡</div>
+          <h3>Edge Testing</h3>
+          <p>Direct 25 MB streaming download & 10 MB upload tests benchmarked against edge infrastructure.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feat-icon">🤖</div>
+          <h3>Auto-Detection</h3>
+          <p>Silently identifies Home WiFi, Office WiFi, 4G, 5G, Fiber, Cable, or Satellite without manual entry.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feat-icon">🌐</div>
+          <h3>Global Speed Map</h3>
+          <p>Explore live pin markers, heatmaps, and tier filters (Ultra, Fast, Mid, Slow) across every continent.</p>
+        </div>
+      </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="landing-footer">
+      <span>SpeedMap © 2026 · Global Internet Performance Network</span>
+    </footer>
+  </div>
+</section>
+
+<!-- ═══════════════════════════ SCREEN: TEST ═════════════════════════════ -->
+<section id="screen-test" class="screen">
+  <div class="scene"><div class="orb o1"></div><div class="orb o2"></div></div>
+  <div class="card test-card" id="test-card">
+
+    <!-- Gauge (shown during test) -->
+    <div class="gauge" id="gauge-wrap">
+      <svg class="gauge-svg" viewBox="0 0 180 108" fill="none">
+        <path d="M18 94 A74 74 0 0 1 162 94" stroke="rgba(255,255,255,0.06)" stroke-width="12" stroke-linecap="round"/>
+        <path id="gauge-arc" d="M18 94 A74 74 0 0 1 162 94"
+              stroke="url(#garc)" stroke-width="12" stroke-linecap="round"
+              stroke-dasharray="232.5" stroke-dashoffset="232.5"/>
+        <defs>
+          <linearGradient id="garc" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%"   stop-color="#92400e"/>
+            <stop offset="100%" stop-color="#f59e0b"/>
+          </linearGradient>
+        </defs>
+      </svg>
+      <div class="gauge-center">
+        <number-flow class="gauge-val" id="gauge-val" value="0"></number-flow>
+        <span class="gauge-unit" id="gauge-unit">Mbps</span>
+      </div>
+    </div>
+
+    <!-- Steps -->
+    <ul class="steps" id="steps-list">
+      <li class="step" id="s-network">
+        <div class="step-dot"></div>
+        <div class="step-body">
+          <span class="step-name">Detecting network</span>
+          <span class="step-val" id="sv-network">—</span>
+        </div>
+      </li>
+      <li class="step" id="s-location">
+        <div class="step-dot"></div>
+        <div class="step-body">
+          <span class="step-name">Location</span>
+          <span class="step-val" id="sv-location">—</span>
+        </div>
+      </li>
+      <li class="step" id="s-ping">
+        <div class="step-dot"></div>
+        <div class="step-body">
+          <span class="step-name">Ping</span>
+          <span class="step-val" id="sv-ping">—</span>
+        </div>
+      </li>
+      <li class="step" id="s-dl">
+        <div class="step-dot"></div>
+        <div class="step-body">
+          <span class="step-name">Download</span>
+          <span class="step-val" id="sv-dl">—</span>
+        </div>
+      </li>
+      <li class="step" id="s-ul">
+        <div class="step-dot"></div>
+        <div class="step-body">
+          <span class="step-name">Upload</span>
+          <span class="step-val" id="sv-ul">—</span>
+        </div>
+      </li>
+    </ul>
+
+    <p class="test-status" id="test-status">Starting…</p>
+
+    <!-- Result view (shown after test) -->
+    <div class="result-view" id="result-view">
+      <div class="rv-hero">
+        <div class="rv-speed">
+          <number-flow id="rv-num" class="rv-num" value="0" format='{"maximumFractionDigits":1}'></number-flow>
+          <span class="rv-unit">Mbps</span>
+        </div>
+        <span class="rv-pill" id="rv-pill">—</span>
+      </div>
+      <p class="rv-caption">↓ Download speed</p>
+      <div class="rv-grid">
+        <div class="rv-stat">
+          <number-flow id="rv-ul" class="rv-sv" value="0" format='{"maximumFractionDigits":1}'></number-flow>
+          <span class="rv-sl">↑ Upload · Mbps</span>
+        </div>
+        <div class="rv-stat">
+          <number-flow id="rv-ping" class="rv-sv" value="0"></number-flow>
+          <span class="rv-sl">Ping · ms</span>
+        </div>
+        <div class="rv-stat">
+          <span class="rv-sv rv-sv-sm" id="rv-net">—</span>
+          <span class="rv-sl">Network</span>
+        </div>
+        <div class="rv-stat">
+          <span class="rv-sv rv-sv-sm" id="rv-city">—</span>
+          <span class="rv-sl">Location</span>
+        </div>
+      </div>
+      <p class="rv-note" id="rv-note">Saving to global map…</p>
+    </div>
+
+  </div>
+</section>
+
+<!-- ═══════════════════════════ SCREEN: MAP ══════════════════════════════ -->
+<section id="screen-map" class="screen map-screen">
+  <div id="map"></div>
+
+  <header class="map-bar">
+    <div class="bar-brand">
+      <svg width="18" height="18" viewBox="0 0 32 32" fill="none">
+        <circle cx="16" cy="16" r="14.5" stroke="#f59e0b" stroke-width="1.4" opacity=".55"/>
+        <ellipse cx="16" cy="16" rx="5.5" ry="14.5" stroke="#f59e0b" stroke-width="1.4" opacity=".38"/>
+        <line x1="1.5" y1="16" x2="30.5" y2="16" stroke="#f59e0b" stroke-width="1.4" opacity=".38"/>
+        <circle cx="16" cy="16" r="2.5" fill="#f59e0b"/>
+      </svg>
+      <span>SpeedMap</span>
+    </div>
+
+    <div class="bar-results" id="bar-results">
+      <!-- hidden until test completes, shown via JS -->
+    </div>
+
+    <div class="bar-controls">
+      <button class="bar-btn active" id="btn-markers" title="Markers">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/></svg>
+      </button>
+      <button class="bar-btn" id="btn-heat" title="Heatmap">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="3" fill="currentColor"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+      <div class="bar-sep"></div>
+      <button class="bar-btn" id="btn-retest" title="New test">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <div class="map-legend" id="map-legend">
+    <span class="leg-label">Filter</span>
+    <span class="leg-item" data-tier="slow"><span class="leg-dot slow"></span>Slow</span>
+    <span class="leg-item" data-tier="mid"><span class="leg-dot mid"></span>Mid</span>
+    <span class="leg-item" data-tier="fast"><span class="leg-dot fast"></span>Fast</span>
+    <span class="leg-item" data-tier="ultra"><span class="leg-dot ultra"></span>Ultra</span>
+    <button class="leg-clear" id="leg-clear" title="Clear filters">✕ All</button>
+  </div>
+</section>
+
+<!-- Toast -->
+<div id="toast" class="toast"></div>
+
+<!-- Firebase SDKs -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<!-- Leaflet -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+<!-- App -->
+<script src="app.js"></script>
+</body>
+</html>
