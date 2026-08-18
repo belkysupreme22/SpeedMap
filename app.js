@@ -1,13 +1,14 @@
 /* SpeedMap — app.js */
 
 // ── Firebase config ──────────────────────────────────
-var FIREBASE_CONFIG = {
-  apiKey:            "AIzaSyB9bddtbyZAHD5XcnBSycPV0vw8qR5Hp9E",
-  authDomain:        "speedmap-2a75c.firebaseapp.com",
-  projectId:         "speedmap-2a75c",
-  storageBucket:     "speedmap-2a75c.firebasestorage.app",
-  messagingSenderId: "645772223490",
-  appId:             "1:645772223490:web:18eed4a4f5d396c87e731b"
+var env = window.ENV || {};
+var FIREBASE_CONFIG = window.FIREBASE_CONFIG || {
+  apiKey:            env.FIREBASE_API_KEY || "",
+  authDomain:        env.FIREBASE_AUTH_DOMAIN || "speedmap-2a75c.firebaseapp.com",
+  projectId:         env.FIREBASE_PROJECT_ID || "speedmap-2a75c",
+  storageBucket:     env.FIREBASE_STORAGE_BUCKET || "speedmap-2a75c.firebasestorage.app",
+  messagingSenderId: env.FIREBASE_MESSAGING_SENDER_ID || "645772223490",
+  appId:             env.FIREBASE_APP_ID || ""
 };
 
 // ── App state ────────────────────────────────────────
