@@ -35,6 +35,7 @@
         <span>SpeedMap</span>
       </div>
       <div class="nav-actions">
+        <button id="btn-nav-history" class="nav-link">My History</button>
         <button id="btn-nav-leaderboard" class="nav-link">Leaderboard</button>
         <button id="btn-nav-map" class="nav-link">View Map</button>
         <button id="btn-nav-test" class="btn-primary btn-sm">Test Speed</button>
@@ -92,162 +93,153 @@
       <div class="feature-grid">
         <div class="feature-card">
           <div class="feat-icon">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
           </div>
-          <h3>Edge Testing</h3>
-          <p>Direct 25 MB streaming download & 10 MB upload tests benchmarked against edge infrastructure.</p>
+          <h3>Accurate Diagnostics</h3>
+          <p>Multi-thread ping & throughput measurement with zero bloatware or invasive trackers.</p>
         </div>
         <div class="feature-card">
           <div class="feat-icon">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="2"/><path d="M16.24 7.76a6 6 0 0 1 0 8.49m-8.48-.01a6 6 0 0 1 0-8.49m11.31-2.83a10 10 0 0 1 0 14.14m-14.14 0a10 10 0 0 1 0-14.14"/></svg>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
           </div>
-          <h3>Auto-Detection</h3>
-          <p>Silently identifies Home WiFi, Office WiFi, 4G, 5G, Fiber, Cable, or Satellite without manual entry.</p>
+          <h3>Global Heatmap</h3>
+          <p>Plot real user connections globally to visualize provider performance by neighborhood and city.</p>
         </div>
         <div class="feature-card">
           <div class="feat-icon">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
           </div>
-          <h3>Global Speed Map</h3>
-          <p>Explore live pin markers, heatmaps, and tier filters (Ultra, Fast, Mid, Slow) across every continent.</p>
+          <h3>Privacy-First Data</h3>
+          <p>Coordinates are mapped anonymously. No IP addresses or personal data are stored publicly.</p>
         </div>
       </div>
     </main>
 
-    <!-- Footer -->
     <footer class="landing-footer">
-      <span>SpeedMap © 2026 · Global Internet Performance Network</span>
+      <span>SpeedMap &copy; 2026 &middot; Global Connection Benchmark</span>
     </footer>
   </div>
 </section>
 
-<!-- ═══════════════════════════ SCREEN: TEST ═════════════════════════════ -->
+<!-- ═══════════════════════════ SCREEN: SPEED TEST ═══════════════════════════ -->
 <section id="screen-test" class="screen">
   <div class="scene"><div class="orb o1"></div><div class="orb o2"></div></div>
-  <div class="card test-card" id="test-card">
-    <button class="test-back-btn" id="btn-cancel-test" title="Cancel test and return home">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-      <span>Cancel</span>
-    </button>
+  <div class="test-container">
 
-    <!-- Gauge (shown during test) -->
-    <div class="gauge" id="gauge-wrap">
-      <svg class="gauge-svg" viewBox="0 0 180 108" fill="none">
-        <path d="M18 94 A74 74 0 0 1 162 94" stroke="rgba(255,255,255,0.06)" stroke-width="12" stroke-linecap="round"/>
-        <path id="gauge-arc" d="M18 94 A74 74 0 0 1 162 94"
-              stroke="url(#garc)" stroke-width="12" stroke-linecap="round"
-              stroke-dasharray="232.5" stroke-dashoffset="232.5"/>
-        <defs>
-          <linearGradient id="garc" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%"   stop-color="#92400e"/>
-            <stop offset="100%" stop-color="#f59e0b"/>
-          </linearGradient>
-        </defs>
-      </svg>
-      <div class="gauge-center">
-        <span class="gauge-val" id="gauge-val">0</span>
-        <span class="gauge-unit" id="gauge-unit">Mbps</span>
+    <div class="card test-card">
+      <button id="btn-cancel-test" class="test-back-btn">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+        <span>Cancel</span>
+      </button>
+
+      <!-- Gauge SVG -->
+      <div class="gauge" id="gauge-wrap">
+        <svg class="gauge-svg" viewBox="0 0 200 130">
+          <path class="gauge-bg" d="M 25 110 A 75 75 0 1 1 175 110" fill="none" stroke="rgba(255,255,255,0.07)" stroke-width="12" stroke-linecap="round"/>
+          <path class="gauge-arc" id="gauge-arc" d="M 25 110 A 75 75 0 1 1 175 110" fill="none" stroke="url(#gauge-grad)" stroke-width="12" stroke-linecap="round" stroke-dasharray="290" stroke-dashoffset="290"/>
+          <defs>
+            <linearGradient id="gauge-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#f59e0b"/>
+              <stop offset="60%" stop-color="#eab308"/>
+              <stop offset="100%" stop-color="#ef4444"/>
+            </linearGradient>
+          </defs>
+        </svg>
+        <div class="gauge-center">
+          <span class="gauge-val" id="gauge-val">0</span>
+          <span class="gauge-unit" id="gauge-unit">Mbps</span>
+        </div>
       </div>
-    </div>
 
-    <!-- Steps -->
-    <ul class="steps" id="steps-list">
-      <li class="step" id="s-network">
-        <div class="step-dot"></div>
-        <div class="step-body">
-          <span class="step-name">Detecting network</span>
+      <!-- Step List -->
+      <div class="steps-list" id="steps-list">
+        <div class="step-item" id="s-network">
+          <div class="step-dot"></div>
+          <span class="step-name">Detecting network & device</span>
           <span class="step-val" id="sv-network">—</span>
         </div>
-      </li>
-      <li class="step" id="s-location">
-        <div class="step-dot"></div>
-        <div class="step-body">
-          <span class="step-name">Location</span>
+        <div class="step-item" id="s-location">
+          <div class="step-dot"></div>
+          <span class="step-name">Getting location & ISP</span>
           <span class="step-val" id="sv-location">—</span>
         </div>
-      </li>
-      <li class="step" id="s-ping">
-        <div class="step-dot"></div>
-        <div class="step-body">
-          <span class="step-name">Ping</span>
+        <div class="step-item" id="s-ping">
+          <div class="step-dot"></div>
+          <span class="step-name">Ping latency</span>
           <span class="step-val" id="sv-ping">—</span>
         </div>
-      </li>
-      <li class="step" id="s-dl">
-        <div class="step-dot"></div>
-        <div class="step-body">
-          <span class="step-name">Download</span>
+        <div class="step-item" id="s-dl">
+          <div class="step-dot"></div>
+          <span class="step-name">Download speed</span>
           <span class="step-val" id="sv-dl">—</span>
         </div>
-      </li>
-      <li class="step" id="s-ul">
-        <div class="step-dot"></div>
-        <div class="step-body">
-          <span class="step-name">Upload</span>
+        <div class="step-item" id="s-ul">
+          <div class="step-dot"></div>
+          <span class="step-name">Upload speed</span>
           <span class="step-val" id="sv-ul">—</span>
         </div>
-      </li>
-    </ul>
+      </div>
 
-    <p class="test-status" id="test-status">Starting…</p>
+      <p class="test-status" id="test-status">Starting test…</p>
 
-    <!-- Result view (shown after test) -->
-    <div class="result-view" id="result-view">
-      <div class="rv-hero">
-        <div class="rv-speed">
-          <span id="rv-num" class="rv-num">0</span>
-          <span class="rv-unit">Mbps</span>
+      <!-- Result view (shown after test) -->
+      <div class="result-view" id="result-view">
+        <div class="rv-hero">
+          <div class="rv-speed">
+            <span id="rv-num" class="rv-num">0</span>
+            <span class="rv-unit">Mbps</span>
+          </div>
+          <span class="rv-pill" id="rv-pill">—</span>
         </div>
-        <span class="rv-pill" id="rv-pill">—</span>
+        <p class="rv-caption">↓ Download speed</p>
+        <div class="rv-grid">
+          <div class="rv-stat">
+            <span id="rv-ul" class="rv-sv">0</span>
+            <span class="rv-sl">↑ Upload · Mbps</span>
+          </div>
+          <div class="rv-stat">
+            <span id="rv-ping" class="rv-sv">0</span>
+            <span class="rv-sl">Ping · ms</span>
+          </div>
+          <div class="rv-stat">
+            <span class="rv-sv rv-sv-sm" id="rv-net">—</span>
+            <span class="rv-sl">Network</span>
+          </div>
+          <div class="rv-stat">
+            <span class="rv-sv rv-sv-sm" id="rv-device">—</span>
+            <span class="rv-sl">Device</span>
+          </div>
+          <div class="rv-stat">
+            <span class="rv-sv rv-sv-sm" id="rv-city">—</span>
+            <span class="rv-sl">Location</span>
+          </div>
+          <div class="rv-stat">
+            <span class="rv-sv rv-sv-sm" id="rv-isp">—</span>
+            <span class="rv-sl">Provider</span>
+          </div>
+        </div>
+        <div class="rv-actions">
+          <button id="btn-rv-map" class="btn-primary btn-hero">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"></polygon><line x1="8" y1="2" x2="8" y2="18"></line><line x1="16" y1="6" x2="16" y2="22"></line></svg>
+            <span>View On Global Map</span>
+          </button>
+          <button id="btn-rv-retest" class="btn-ghost btn-hero">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+            <span>Test Again</span>
+          </button>
+          <button id="btn-share-card" class="btn-ghost btn-hero">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+            <span>Share Card</span>
+          </button>
+          <button id="btn-rv-home" class="btn-ghost btn-hero">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+            <span>Go Home</span>
+          </button>
+        </div>
+        <p class="rv-note" id="rv-note">Saved to global map</p>
       </div>
-      <p class="rv-caption">↓ Download speed</p>
-      <div class="rv-grid">
-        <div class="rv-stat">
-          <span id="rv-ul" class="rv-sv">0</span>
-          <span class="rv-sl">↑ Upload · Mbps</span>
-        </div>
-        <div class="rv-stat">
-          <span id="rv-ping" class="rv-sv">0</span>
-          <span class="rv-sl">Ping · ms</span>
-        </div>
-        <div class="rv-stat">
-          <span class="rv-sv rv-sv-sm" id="rv-net">—</span>
-          <span class="rv-sl">Network</span>
-        </div>
-        <div class="rv-stat">
-          <span class="rv-sv rv-sv-sm" id="rv-device">—</span>
-          <span class="rv-sl">Device</span>
-        </div>
-        <div class="rv-stat">
-          <span class="rv-sv rv-sv-sm" id="rv-city">—</span>
-          <span class="rv-sl">Location</span>
-        </div>
-        <div class="rv-stat">
-          <span class="rv-sv rv-sv-sm" id="rv-isp">—</span>
-          <span class="rv-sl">Provider</span>
-        </div>
-      </div>
-      <div class="rv-actions">
-        <button id="btn-rv-map" class="btn-primary btn-hero">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"></polygon><line x1="8" y1="2" x2="8" y2="18"></line><line x1="16" y1="6" x2="16" y2="22"></line></svg>
-          <span>View On Global Map</span>
-        </button>
-        <button id="btn-rv-retest" class="btn-ghost btn-hero">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
-          <span>Test Again</span>
-        </button>
-        <button id="btn-share-card" class="btn-ghost btn-hero">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
-          <span>Share Card</span>
-        </button>
-        <button id="btn-rv-home" class="btn-ghost btn-hero">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
-          <span>Go Home</span>
-        </button>
-      </div>
-      <p class="rv-note" id="rv-note">Saved to global map</p>
+
     </div>
-
   </div>
 </section>
 
@@ -266,22 +258,47 @@
       <span>SpeedMap</span>
     </div>
 
-    <div class="bar-results" id="bar-results">
-      <!-- hidden until test completes, shown via JS -->
+    <!-- Active Test Bar Metrics (shown on map header) -->
+    <div class="bar-results" id="bar-results" style="display:none">
+      <div class="brs">
+        <span class="brs-l">↓ Speed</span>
+        <span class="brs-v" id="brs-dl">0.0</span>
+        <span class="brs-u">Mbps</span>
+      </div>
+      <div class="brs">
+        <span class="brs-l">↑ Upload</span>
+        <span class="brs-v" id="brs-ul">0.0</span>
+        <span class="brs-u">Mbps</span>
+      </div>
+      <div class="brs">
+        <span class="brs-l">Ping</span>
+        <span class="brs-v" id="brs-ping">0</span>
+        <span class="brs-u">ms</span>
+      </div>
+      <div class="brs">
+        <span class="brs-l">Network</span>
+        <span class="brs-v brs-v-sm" id="brs-net">—</span>
+      </div>
     </div>
 
     <div class="bar-controls">
-      <button class="bar-btn active" id="btn-markers" title="Markers">
+      <button class="bar-btn active" id="btn-markers" title="Markers Mode">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/></svg>
       </button>
-      <button class="bar-btn" id="btn-heat" title="Heatmap">
+      <button class="bar-btn" id="btn-heat" title="Speed Heatmap">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="3" fill="currentColor"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+      <button class="bar-btn" id="btn-ping-heat" title="Latency Heatmap">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
       </button>
       <button class="bar-btn" id="btn-bar-leaderboard" title="Leaderboard">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
       </button>
+      <button class="bar-btn" id="btn-bar-history" title="My History">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      </button>
       <div class="bar-sep"></div>
-      <button class="bar-btn" id="btn-retest" title="New test">
+      <button class="bar-btn" id="btn-retest" title="New speed test">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
       </button>
       <button class="bar-btn" id="btn-map-home" title="Return Home">
@@ -305,7 +322,7 @@
   </div>
 </section>
 
-<!-- ═══════════════════════════ SCREEN: LEADERBOARD ══════════════════════ -->
+<!-- ═══════════════════════════ SCREEN: LEADERBOARD PAGE ═══════════════════════════ -->
 <section id="screen-leaderboard" class="screen lb-screen">
   <div class="scene"><div class="orb o1"></div><div class="orb o2"></div></div>
   <div class="lb-page-container">
@@ -327,33 +344,47 @@
 
     <main class="lb-page-main">
       <div class="lb-title-wrap">
-        <h1 class="lb-page-title">Global Internet Intelligence & Leaderboards</h1>
+        <h1 class="lb-page-title">Global Internet Intelligence &amp; Leaderboards</h1>
         <p class="lb-page-sub">Real-time throughput rankings calculated across live speed test submissions worldwide</p>
       </div>
 
-      <!-- Summary analytics highlights bar -->
+      <!-- Network Health & Stability Banner -->
+      <div class="health-banner" id="health-banner">
+        <div class="hb-item">
+          <span class="hb-pulse"></span>
+          <span class="hb-label">NETWORK STABILITY:</span>
+          <span class="hb-val" id="hb-isp-status">Ethio Telecom &middot; 92% Operational</span>
+        </div>
+        <div class="hb-sep"></div>
+        <div class="hb-item">
+          <span class="hb-label">TOP REGION:</span>
+          <span class="hb-val" id="hb-region-status">Addis Ababa &middot; High Throughput Zone</span>
+        </div>
+      </div>
+
+      <!-- Summary Stat Boxes -->
       <div class="lb-summary-grid" id="lb-summary-grid">
         <div class="lb-stat-box box-peak">
           <div class="lb-sb-header">
             <div class="lb-sb-icon icon-amber">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/></svg>
             </div>
             <span class="lb-sb-label">PEAK RECORDED</span>
           </div>
-          <span class="lb-sb-val" id="lb-stat-peak">0.0 <small>Mbps</small></span>
+          <div class="lb-sb-val"><span id="lb-stat-peak">0.0</span> <small>Mbps</small></div>
           <div class="lb-sb-footer">
-            <span class="lb-sb-badge" id="lb-stat-peak-sub">Global benchmark</span>
+            <span class="lb-sb-badge" id="lb-stat-peak-sub">Global Benchmark</span>
           </div>
         </div>
 
         <div class="lb-stat-box box-isps">
           <div class="lb-sb-header">
             <div class="lb-sb-icon icon-blue">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect><rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect><line x1="6" y1="6" x2="6.01" y2="6"></line><line x1="6" y1="18" x2="6.01" y2="18"></line></svg>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>
             </div>
             <span class="lb-sb-label">TOTAL ISPS</span>
           </div>
-          <span class="lb-sb-val" id="lb-stat-isps">0</span>
+          <div class="lb-sb-val"><span id="lb-stat-isps">0</span></div>
           <div class="lb-sb-footer">
             <span class="lb-sb-sub">Active Providers Mapped</span>
           </div>
@@ -362,28 +393,29 @@
         <div class="lb-stat-box box-ping">
           <div class="lb-sb-header">
             <div class="lb-sb-icon icon-green">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
             </div>
             <span class="lb-sb-label">AVG LATENCY</span>
           </div>
-          <span class="lb-sb-val" id="lb-stat-ping">0 <small>ms</small></span>
+          <div class="lb-sb-val"><span id="lb-stat-ping">0</span> <small>ms</small></div>
           <div class="lb-sb-footer">
             <span class="lb-sb-sub">Global Ping Average</span>
           </div>
         </div>
       </div>
 
+      <!-- Segmented Tab Bar Filters -->
       <div class="lb-tabs">
         <button class="lb-tab active" data-tab="isps">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect><rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect><line x1="6" y1="6" x2="6.01" y2="6"></line><line x1="6" y1="18" x2="6.01" y2="18"></line></svg>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/></svg>
           <span>Fastest ISPs</span>
         </button>
         <button class="lb-tab" data-tab="cities">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
           <span>Top Locations</span>
         </button>
         <button class="lb-tab" data-tab="tiers">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
           <span>Speed Tiers</span>
         </button>
       </div>
@@ -395,12 +427,34 @@
   </div>
 </section>
 
+<!-- MODAL: MY SPEED HISTORY -->
+<div id="modal-history" class="modal-overlay">
+  <div class="modal-card history-modal">
+    <div class="modal-header">
+      <h2>My Speed History &amp; Trends</h2>
+      <button class="modal-close" id="close-history">&times;</button>
+    </div>
+    <div class="modal-body history-body">
+      <div class="sparkline-wrap">
+        <div class="sparkline-header">
+          <span class="sl-title">Throughput Trend (Mbps)</span>
+          <span class="sl-count" id="sl-test-count">0 tests recorded</span>
+        </div>
+        <canvas id="sparkline-canvas" width="560" height="100"></canvas>
+      </div>
+      <div class="history-list" id="history-list">
+        <!-- Rendered via JS -->
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL: SHARE CARD -->
 <div id="modal-share" class="modal-overlay">
   <div class="modal-card share-card-modal">
     <div class="modal-header">
       <h2>Your Speed Card</h2>
-      <button class="modal-close" id="close-share">✕</button>
+      <button class="modal-close" id="close-share">&times;</button>
     </div>
     <div class="modal-body share-body">
       <div class="share-preview-wrap">
