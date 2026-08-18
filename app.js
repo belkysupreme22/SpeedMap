@@ -11,10 +11,24 @@ var FIREBASE_CONFIG = window.FIREBASE_CONFIG || {
   appId:             env.FIREBASE_APP_ID || ""
 };
 
+// ── Device detection ─────────────────────────────────
+function detectDevice() {
+  var ua = navigator.userAgent || '';
+  if (/iphone/i.test(ua))  return 'iPhone';
+  if (/ipad/i.test(ua))    return 'iPad';
+  if (/android/i.test(ua)) return 'Android';
+  if (/macintosh|mac os x/i.test(ua)) return 'Mac';
+  if (/windows/i.test(ua)) return 'Windows PC';
+  if (/linux/i.test(ua))   return 'Linux PC';
+
+  var isMobile = /mobi|touch/i.test(ua) || (window.innerWidth <= 768) || (navigator.maxTouchPoints > 0);
+  return isMobile ? 'Mobile Device' : 'Desktop Web';
+}
+
 // ── App state ────────────────────────────────────────
 var state = {
   isp: '', nickname: 'Anonymous',
-  networkType: 'unknown',
+  device: '', networkType: 'unknown',
   location: null, city: '',
   ping: null, download: null, upload: null
 };
@@ -101,7 +115,7 @@ function speedTierName(mbps) {
   var num = parseFloat(mbps) || 0;
   if (num >= 100) return 'ultra';
   if (num >= 25)  return 'fast';
-  if (num >= 5)   return 'mid';
+  if (num >= 10)  return 'mid';
   return 'slow';
 }
 
@@ -306,10 +320,9 @@ function wait(ms) { return new Promise(function(r) { setTimeout(r, ms); }); }
 
 // ── Run test ─────────────────────────────────────────
 function startTest() {
-  var ispEl  = document.getElementById('isp-input');
-  var nickEl = document.getElementById('nick-input');
-  state.isp      = ispEl ? (ispEl.value || '').trim() : '';
-  state.nickname = nickEl ? (nickEl.value || '').trim() || 'Anonymous' : 'Anonymous';
+  state.device   = detectDevice();
+  state.isp      = '';
+  state.nickname = 'Anonymous';
   state.ping = state.download = state.upload = null;
   state.city = ''; state.location = null; state.networkType = 'unknown';
 
@@ -334,11 +347,12 @@ function startTest() {
 }
 
 function runTest() {
-  // Step 1: Network
+  // Step 1: Network & Device
   setStep('s-network', 'active', '—');
-  setStatus('Detecting network…');
+  setStatus('Detecting network & device…');
   state.networkType = detectNetwork();
-  setStep('s-network', 'done', NET_LABELS[state.networkType] || state.networkType);
+  state.device = detectDevice();
+  setStep('s-network', 'done', (NET_LABELS[state.networkType] || state.networkType) + ' · ' + state.device);
 
   // Step 2: Location & ISP Auto-Detection
   setStep('s-location', 'active', '—');
@@ -425,8 +439,9 @@ function runTest() {
       upload:      state.upload   || 0,
       ping:        state.ping     || 0,
       networkType: state.networkType,
+      device:      state.device,
       isp:         state.isp,
-      nickname:    state.nickname,
+      nickname:    'Anonymous',
       city:        state.city
     };
 
@@ -449,24 +464,25 @@ function runTest() {
       if (nfUl)   animateNumber(nfUl, parseFloat(record.upload)   || 0, 1000, 1);
       if (nfPing) animateNumber(nfPing, parseInt(record.ping)      || 0, 1000, 0);
 
-      var rvPill = document.getElementById('rv-pill');
-      var rvNet  = document.getElementById('rv-net');
-      var rvCity = document.getElementById('rv-city');
-      var rvNote = document.getElementById('rv-note');
-      if (rvPill) rvPill.textContent = NET_LABELS[state.networkType] || state.networkType;
-      if (rvNet)  rvNet.textContent  = NET_LABELS[state.networkType] || '—';
-      if (rvCity) rvCity.textContent = state.city || 'Unknown';
-      if (rvNote) rvNote.textContent = ok
-        ? 'Saved to global map — opening now…'
-        : 'Saved locally — opening map…';
+      var rvPill   = document.getElementById('rv-pill');
+      var rvNet    = document.getElementById('rv-net');
+      var rvDevice = document.getElementById('rv-device');
+      var rvCity   = document.getElementById('rv-city');
+      var rvIsp    = document.getElementById('rv-isp');
+      var rvNote   = document.getElementById('rv-note');
+
+      if (rvPill)   rvPill.textContent   = NET_LABELS[state.networkType] || state.networkType;
+      if (rvNet)    rvNet.textContent    = NET_LABELS[state.networkType] || '—';
+      if (rvDevice) rvDevice.textContent = state.device || 'Unknown';
+      if (rvCity)   rvCity.textContent   = state.city || 'Unknown';
+      if (rvIsp)    rvIsp.textContent    = state.isp || 'Auto-Detected';
+      if (rvNote)   rvNote.textContent   = ok
+        ? 'Result saved & mapped globally'
+        : 'Result saved locally';
       if (rv) rv.classList.add('show');
 
       showToast(ok ? 'Result saved to global map' : 'Saved locally', ok ? 'ok' : 'warn');
-
-      return wait(2200);
     });
-  }).then(function() {
-    goToMap();
   }).catch(function(err) {
     console.error('[SpeedMap] Test error:', err);
     setStatus('Error: ' + err.message);
@@ -518,9 +534,10 @@ function goToMap() {
 }
 
 function speedColor(mbps) {
-  if (mbps >= 200) return '#38bdf8';
-  if (mbps >= 50)  return '#22c55e';
-  if (mbps >= 10)  return '#f97316';
+  var num = parseFloat(mbps) || 0;
+  if (num >= 100) return '#38bdf8';
+  if (num >= 25)  return '#22c55e';
+  if (num >= 10)  return '#f97316';
   return '#ef4444';
 }
 
@@ -575,20 +592,20 @@ function renderMarkers(results) {
         fillOpacity: 0.88, opacity: 1
       });
 
-      var nick = r.nickname || 'Anonymous';
-      var net  = NET_LABELS[r.networkType] || r.networkType || '?';
-      var isp  = r.isp  ? '<span>' + r.isp + '</span>'      : '';
-      var city = r.city ? '<span>' + r.city + '</span>'     : '';
-      var ago  = timeAgo(r.ts || r.timestamp);
-      var foot = [isp, city].filter(Boolean).join(' · ');
+      var net      = NET_LABELS[r.networkType] || r.networkType || 'Connection';
+      var hasIsp   = r.isp && r.isp.trim() && r.isp.trim().toLowerCase() !== 'unknown' && r.isp.trim().toLowerCase() !== 'unknown provider';
+      var isp      = hasIsp ? r.isp.trim() : 'Unknown Provider';
+      var city     = r.city || 'Global Location';
+      var device   = r.device || 'Desktop Web';
+      var ago      = timeAgo(r.ts || r.timestamp);
 
       var tierTagClass = 'pop-tier-' + tier;
-      var tierTagLabel = tier === 'ultra' ? 'Ultra' : tier === 'fast' ? 'Fast' : tier === 'mid' ? 'Mid' : 'Slow';
+      var tierTagLabel = tier.toUpperCase();
 
       m.bindPopup(
         '<div class="pop">' +
           '<div class="pop-top">' +
-            '<span class="pop-nick">' + nick + '</span>' +
+            '<span class="pop-provider" title="' + isp + '">' + isp + '</span>' +
             '<span class="pop-net">' + net + '</span>' +
           '</div>' +
           '<div class="pop-base">' +
@@ -605,16 +622,20 @@ function renderMarkers(results) {
             '</div>' +
             '<div class="pop-m pop-m-ul">' +
               '<span class="pop-ml">↑ Upload</span>' +
-              '<span class="pop-mv">' + (r.upload || '—') + '</span>' +
+              '<span class="pop-mv">' + (r.upload ? r.upload : '—') + '</span>' +
             '</div>' +
             '<div class="pop-m pop-m-ping">' +
               '<span class="pop-ml">Ping</span>' +
               '<span class="pop-mv">' + (r.ping ? r.ping + ' ms' : '—') + '</span>' +
             '</div>' +
           '</div>' +
-          '<div class="pop-footer"><span>' + foot + '</span><span>' + ago + '</span></div>' +
+          '<div class="pop-detail-row">' +
+            '<span class="pop-detail-item">Device: <strong>' + device + '</strong></span>' +
+            '<span class="pop-detail-item">City: <strong>' + city + '</strong></span>' +
+          '</div>' +
+          '<div class="pop-footer"><span>Verified Test</span><span>' + ago + '</span></div>' +
         '</div>',
-        { maxWidth: 260, minWidth: 220 }
+        { maxWidth: 280, minWidth: 240 }
       );
       markerLayer.addLayer(m);
     }
@@ -630,19 +651,23 @@ function renderMarkers(results) {
   }
 
   if (state.location && layerMode === 'markers') {
-    var icon = L.divIcon({
-      html: '<div class="user-pin"><div class="user-pin-dot"></div></div>',
-      className: '', iconSize: [20,20], iconAnchor: [10,10]
-    });
     var uDl = state.download || 0;
     var uTier = speedTierName(uDl);
-    var uTagClass = 'pop-tier-' + uTier;
-    var uTagLabel = uTier === 'ultra' ? 'Ultra' : uTier === 'fast' ? 'Fast' : uTier === 'mid' ? 'Mid' : 'Slow';
 
+    if (!anyTierActive || activeTiers[uTier]) {
+      var icon = L.divIcon({
+        html: '<div class="user-pin"><div class="user-pin-dot"></div></div>',
+        className: '', iconSize: [20,20], iconAnchor: [10,10]
+      });
+      var uTagClass = 'pop-tier-' + uTier;
+      var uTagLabel = uTier === 'ultra' ? 'Ultra' : uTier === 'fast' ? 'Fast' : uTier === 'mid' ? 'Mid' : 'Slow';
+
+    var hasUIsp  = state.isp && state.isp.trim() && state.isp.trim().toLowerCase() !== 'unknown' && state.isp.trim().toLowerCase() !== 'unknown provider';
+    var uIsp     = hasUIsp ? state.isp.trim() : 'Unknown Provider';
     var userPopup =
       '<div class="pop">' +
         '<div class="pop-top">' +
-          '<span class="pop-nick">' + (state.nickname || 'You') + '</span>' +
+          '<span class="pop-provider" title="' + uIsp + '">' + uIsp + '</span>' +
           '<span class="pop-net">' + (NET_LABELS[state.networkType] || state.networkType) + '</span>' +
         '</div>' +
         '<div class="pop-base">' +
@@ -655,22 +680,27 @@ function renderMarkers(results) {
         '<div class="pop-metrics">' +
           '<div class="pop-m pop-m-dl">' +
             '<span class="pop-ml">↓ Download</span>' +
-            '<span class="pop-mv">' + (state.download || '—') + '</span>' +
+            '<span class="pop-mv">' + (state.download ? state.download.toFixed(1) : '—') + '</span>' +
           '</div>' +
           '<div class="pop-m pop-m-ul">' +
             '<span class="pop-ml">↑ Upload</span>' +
-            '<span class="pop-mv">' + (state.upload || '—') + '</span>' +
+            '<span class="pop-mv">' + (state.upload ? state.upload.toFixed(1) : '—') + '</span>' +
           '</div>' +
           '<div class="pop-m pop-m-ping">' +
             '<span class="pop-ml">Ping</span>' +
             '<span class="pop-mv">' + (state.ping ? state.ping + ' ms' : '—') + '</span>' +
           '</div>' +
         '</div>' +
-        '<div class="pop-footer"><span>' + (state.city || 'Your location') + '</span><span>just now</span></div>' +
+        '<div class="pop-detail-row">' +
+          '<span class="pop-detail-item">Device: <strong>' + (state.device || 'Desktop') + '</strong></span>' +
+          '<span class="pop-detail-item">City: <strong>' + (state.city || 'Your Location') + '</strong></span>' +
+        '</div>' +
+        '<div class="pop-footer"><span>Your Active Pin</span><span>just now</span></div>' +
       '</div>';
     L.marker([state.location.lat, state.location.lng], { icon })
-     .bindPopup(userPopup, { maxWidth: 260, minWidth: 220 })
+     .bindPopup(userPopup, { maxWidth: 280, minWidth: 240 })
      .addTo(markerLayer);
+    }
   }
 }
 
@@ -826,12 +856,12 @@ function renderLeaderboard(tab, page) {
             '<div class="tdc-count">' + tiers.fast + ' of ' + total + ' tests</div>' +
           '</div>' +
           '<div class="tier-dist-card">' +
-            '<div class="tdc-header"><span class="tdc-title" style="color:#f97316">Mid (5-25 Mbps)</span><span class="pop-tier-tag pop-tier-mid">Mid</span></div>' +
+            '<div class="tdc-header"><span class="tdc-title" style="color:#f97316">Mid (10-25 Mbps)</span><span class="pop-tier-tag pop-tier-mid">Mid</span></div>' +
             '<div class="tdc-pct">' + Math.round((tiers.mid/total)*100) + '%</div>' +
             '<div class="tdc-count">' + tiers.mid + ' of ' + total + ' tests</div>' +
           '</div>' +
           '<div class="tier-dist-card">' +
-            '<div class="tdc-header"><span class="tdc-title" style="color:#ef4444">Slow (<5 Mbps)</span><span class="pop-tier-tag pop-tier-slow">Slow</span></div>' +
+            '<div class="tdc-header"><span class="tdc-title" style="color:#ef4444">Slow (<10 Mbps)</span><span class="pop-tier-tag pop-tier-slow">Slow</span></div>' +
             '<div class="tdc-pct">' + Math.round((tiers.slow/total)*100) + '%</div>' +
             '<div class="tdc-count">' + tiers.slow + ' of ' + total + ' tests</div>' +
           '</div>' +
@@ -931,83 +961,133 @@ function renderLeaderboard(tab, page) {
 function openShareModal() {
   var canvas = document.getElementById('share-canvas');
   if (!canvas) return;
+
+  // Set explicit high-resolution canvas bounds
+  canvas.width = 640;
+  canvas.height = 340;
   var ctx = canvas.getContext('2d');
 
-  // Background
-  ctx.fillStyle = '#07080e';
-  ctx.fillRect(0, 0, 600, 340);
+  // Background gradient
+  var bgGrad = ctx.createLinearGradient(0, 0, 640, 340);
+  bgGrad.addColorStop(0, '#0a0c14');
+  bgGrad.addColorStop(1, '#05060a');
+  ctx.fillStyle = bgGrad;
+  ctx.fillRect(0, 0, 640, 340);
 
-  // Border & Grid overlay
-  ctx.strokeStyle = 'rgba(255,255,255,0.08)';
-  ctx.lineWidth = 1;
-  ctx.strokeRect(12, 12, 576, 316);
-
-  // Header Brand
+  // Top Glowing Accent Bar
   ctx.fillStyle = '#f59e0b';
-  ctx.font = 'bold 20px Lexend, sans-serif';
-  ctx.fillText('SpeedMap', 36, 50);
+  ctx.fillRect(0, 0, 640, 3);
+
+  // Outer Border Overlay
+  ctx.strokeStyle = 'rgba(255,255,255,0.07)';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(16, 16, 608, 308);
+
+  // Header Brand Logo & Title
+  ctx.fillStyle = '#f59e0b';
+  ctx.font = '800 22px Lexend, sans-serif';
+  ctx.fillText('SpeedMap', 40, 52);
 
   ctx.fillStyle = '#8a8278';
-  ctx.font = '500 12px Lexend, sans-serif';
-  ctx.fillText('GLOBAL INTERNET BENCHMARK', 36, 68);
+  ctx.font = '600 10px Lexend, sans-serif';
+  ctx.fillText('GLOBAL INTERNET BENCHMARK', 40, 70);
+
+  // Verified Badge (Top Right)
+  ctx.fillStyle = 'rgba(34,197,94,0.1)';
+  ctx.fillRect(470, 36, 130, 28);
+  ctx.strokeStyle = 'rgba(34,197,94,0.3)';
+  ctx.strokeRect(470, 36, 130, 28);
+
+  ctx.fillStyle = '#22c55e';
+  ctx.beginPath();
+  ctx.arc(485, 50, 3.5, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = '#4ade80';
+  ctx.font = '700 10px Lexend, sans-serif';
+  ctx.fillText('VERIFIED TEST', 496, 54);
 
   // Main Speed Hero
-  var dlVal = state.download !== null ? state.download.toFixed(1) : '—';
-  ctx.fillStyle = '#ede9e0';
-  ctx.font = '800 64px Lexend, sans-serif';
-  ctx.fillText(dlVal, 36, 150);
+  var dlVal = state.download !== null ? state.download.toFixed(1) : '0.0';
+  ctx.fillStyle = '#ffffff';
+  ctx.font = '800 62px Lexend, sans-serif';
+  ctx.fillText(dlVal, 40, 146);
 
-  ctx.fillStyle = '#8a8278';
-  ctx.font = '600 18px Lexend, sans-serif';
   var numWidth = ctx.measureText(dlVal).width;
-  ctx.fillText('Mbps Download', 46 + numWidth + 10, 150);
+  ctx.fillStyle = '#f59e0b';
+  ctx.font = '700 20px Lexend, sans-serif';
+  ctx.fillText('Mbps', 40 + numWidth + 12, 126);
 
-  // Stat Grid
+  ctx.fillStyle = '#9ca3af';
+  ctx.font = '500 12px Lexend, sans-serif';
+  ctx.fillText('Download Speed', 40 + numWidth + 12, 146);
+
+  // Speed Tier Badge
+  var tier = speedTierName(parseFloat(dlVal));
+  var tierLabel = tier.toUpperCase() + ' TIER';
+  var tierColor = tier === 'ultra' ? '#38bdf8' : tier === 'fast' ? '#22c55e' : tier === 'mid' ? '#f97316' : '#ef4444';
+
+  ctx.fillStyle = 'rgba(255,255,255,0.04)';
+  ctx.fillRect(480, 115, 120, 28);
+  ctx.strokeStyle = tierColor;
+  ctx.strokeRect(480, 115, 120, 28);
+  ctx.fillStyle = tierColor;
+  ctx.font = '700 10px Lexend, sans-serif';
+  ctx.fillText(tierLabel, 495, 133);
+
+  // Bottom 3 Metric Cards
   var ulVal = state.upload !== null ? state.upload.toFixed(1) + ' Mbps' : '—';
   var pingVal = state.ping !== null ? state.ping + ' ms' : '—';
   var netVal = NET_LABELS[state.networkType] || state.networkType || '—';
-  var locVal = state.city || 'Global User';
+  var devVal = state.device || 'Desktop';
+  var ispVal = state.isp || state.city || 'Global User';
 
-  // Box 1: Upload
-  ctx.fillStyle = 'rgba(168,85,247,0.08)';
-  ctx.fillRect(36, 185, 120, 60);
-  ctx.strokeStyle = 'rgba(168,85,247,0.22)';
-  ctx.strokeRect(36, 185, 120, 60);
+  // Card 1: Upload
+  ctx.fillStyle = 'rgba(168,85,247,0.06)';
+  ctx.fillRect(40, 178, 160, 74);
+  ctx.strokeStyle = 'rgba(168,85,247,0.25)';
+  ctx.strokeRect(40, 178, 160, 74);
   ctx.fillStyle = '#c084fc';
   ctx.font = '700 10px Lexend, sans-serif';
-  ctx.fillText('UPLOAD', 46, 204);
+  ctx.fillText('UPLOAD SPEED', 54, 200);
   ctx.fillStyle = '#e9d5ff';
-  ctx.font = '700 16px Lexend, sans-serif';
-  ctx.fillText(ulVal, 46, 230);
+  ctx.font = '700 20px Lexend, sans-serif';
+  ctx.fillText(ulVal, 54, 234);
 
-  // Box 2: Ping
-  ctx.fillStyle = 'rgba(245,158,11,0.08)';
-  ctx.fillRect(168, 185, 120, 60);
-  ctx.strokeStyle = 'rgba(245,158,11,0.22)';
-  ctx.strokeRect(168, 185, 120, 60);
+  // Card 2: Ping
+  ctx.fillStyle = 'rgba(245,158,11,0.06)';
+  ctx.fillRect(215, 178, 160, 74);
+  ctx.strokeStyle = 'rgba(245,158,11,0.25)';
+  ctx.strokeRect(215, 178, 160, 74);
   ctx.fillStyle = '#fbbf24';
   ctx.font = '700 10px Lexend, sans-serif';
-  ctx.fillText('PING', 178, 204);
+  ctx.fillText('PING LATENCY', 229, 200);
   ctx.fillStyle = '#fde68a';
-  ctx.font = '700 16px Lexend, sans-serif';
-  ctx.fillText(pingVal, 178, 230);
+  ctx.font = '700 20px Lexend, sans-serif';
+  ctx.fillText(pingVal, 229, 234);
 
-  // Box 3: Network
-  ctx.fillStyle = 'rgba(255,255,255,0.03)';
-  ctx.fillRect(300, 185, 264, 60);
-  ctx.strokeStyle = 'rgba(255,255,255,0.08)';
-  ctx.strokeRect(300, 185, 264, 60);
-  ctx.fillStyle = '#8a8278';
+  // Card 3: Network & Location
+  ctx.fillStyle = 'rgba(56,189,248,0.06)';
+  ctx.fillRect(390, 178, 210, 74);
+  ctx.strokeStyle = 'rgba(56,189,248,0.25)';
+  ctx.strokeRect(390, 178, 210, 74);
+  ctx.fillStyle = '#38bdf8';
   ctx.font = '700 10px Lexend, sans-serif';
-  ctx.fillText('NETWORK & LOCATION', 310, 204);
-  ctx.fillStyle = '#ede9e0';
-  ctx.font = '600 14px Lexend, sans-serif';
-  ctx.fillText(netVal + ' · ' + locVal, 310, 230);
-
-  // Footer
-  ctx.fillStyle = '#8a8278';
+  ctx.fillText('NETWORK & LOCATION', 404, 198);
+  ctx.fillStyle = '#ffffff';
+  ctx.font = '700 13px Lexend, sans-serif';
+  ctx.fillText(netVal + ' · ' + devVal, 404, 218, 185);
+  ctx.fillStyle = '#9ca3af';
   ctx.font = '500 11px Lexend, sans-serif';
-  ctx.fillText('Verified on speedmap-2a75c.web.app', 36, 298);
+  ctx.fillText(ispVal, 404, 236, 185);
+
+  // Footer Line
+  ctx.fillStyle = '#6b7280';
+  ctx.font = '500 11px Lexend, sans-serif';
+  ctx.fillText('speedmap-2a75c.web.app', 40, 298);
+
+  var dStr = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  ctx.fillText('Tested on ' + dStr, 480, 298);
 
   // Convert to image preview
   var imgPreview = document.getElementById('share-img-preview');
@@ -1058,11 +1138,16 @@ document.addEventListener('DOMContentLoaded', function() {
   if (btnLbBackMap)  btnLbBackMap.addEventListener('click', goToMap);
   if (btnLbTest)     btnLbTest.addEventListener('click', startTest);
 
-  var btnCancel = document.getElementById('btn-cancel-test');
-  var btnRvMap  = document.getElementById('btn-rv-map');
-  var btnMapHome= document.getElementById('btn-map-home');
+  var btnCancel  = document.getElementById('btn-cancel-test');
+  var btnRvMap   = document.getElementById('btn-rv-map');
+  var btnRvRetest= document.getElementById('btn-rv-retest');
+  var btnRvHome  = document.getElementById('btn-rv-home');
+  var btnMapHome = document.getElementById('btn-map-home');
 
-  if (btnCancel) btnCancel.addEventListener('click', function() { showScreen('screen-welcome'); });
+  if (btnCancel)   btnCancel.addEventListener('click', function() { showScreen('screen-welcome'); });
+  if (btnRvMap)    btnRvMap.addEventListener('click', goToMap);
+  if (btnRvRetest) btnRvRetest.addEventListener('click', startTest);
+  if (btnRvHome)   btnRvHome.addEventListener('click', function() { showScreen('screen-welcome'); });
   if (btnRvMap)  btnRvMap.addEventListener('click', goToMap);
   if (btnMapHome)btnMapHome.addEventListener('click', function() { showScreen('screen-welcome'); });
 
