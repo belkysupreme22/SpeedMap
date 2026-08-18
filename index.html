@@ -124,122 +124,130 @@
 <!-- ═══════════════════════════ SCREEN: SPEED TEST ═══════════════════════════ -->
 <section id="screen-test" class="screen">
   <div class="scene"><div class="orb o1"></div><div class="orb o2"></div></div>
-  <div class="test-container">
+  <div class="card test-card" id="test-card">
+    <button class="test-back-btn" id="btn-cancel-test" title="Cancel test and return home">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+      <span>Cancel</span>
+    </button>
 
-    <div class="card test-card">
-      <button id="btn-cancel-test" class="test-back-btn">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
-        <span>Cancel</span>
-      </button>
-
-      <!-- Gauge SVG -->
-      <div class="gauge" id="gauge-wrap">
-        <svg class="gauge-svg" viewBox="0 0 200 130">
-          <path class="gauge-bg" d="M 25 110 A 75 75 0 1 1 175 110" fill="none" stroke="rgba(255,255,255,0.07)" stroke-width="12" stroke-linecap="round"/>
-          <path class="gauge-arc" id="gauge-arc" d="M 25 110 A 75 75 0 1 1 175 110" fill="none" stroke="url(#gauge-grad)" stroke-width="12" stroke-linecap="round" stroke-dasharray="290" stroke-dashoffset="290"/>
-          <defs>
-            <linearGradient id="gauge-grad" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stop-color="#f59e0b"/>
-              <stop offset="60%" stop-color="#eab308"/>
-              <stop offset="100%" stop-color="#ef4444"/>
-            </linearGradient>
-          </defs>
-        </svg>
-        <div class="gauge-center">
-          <span class="gauge-val" id="gauge-val">0</span>
-          <span class="gauge-unit" id="gauge-unit">Mbps</span>
-        </div>
+    <!-- Gauge (shown during test) -->
+    <div class="gauge" id="gauge-wrap">
+      <svg class="gauge-svg" viewBox="0 0 180 108" fill="none">
+        <path d="M18 94 A74 74 0 0 1 162 94" stroke="rgba(255,255,255,0.06)" stroke-width="12" stroke-linecap="round"/>
+        <path id="gauge-arc" d="M18 94 A74 74 0 0 1 162 94"
+              stroke="url(#garc)" stroke-width="12" stroke-linecap="round"
+              stroke-dasharray="232.5" stroke-dashoffset="232.5"/>
+        <defs>
+          <linearGradient id="garc" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%"   stop-color="#92400e"/>
+            <stop offset="100%" stop-color="#f59e0b"/>
+          </linearGradient>
+        </defs>
+      </svg>
+      <div class="gauge-center">
+        <span class="gauge-val" id="gauge-val">0</span>
+        <span class="gauge-unit" id="gauge-unit">Mbps</span>
       </div>
+    </div>
 
-      <!-- Step List -->
-      <div class="steps-list" id="steps-list">
-        <div class="step-item" id="s-network">
-          <div class="step-dot"></div>
-          <span class="step-name">Detecting network & device</span>
+    <!-- Steps -->
+    <ul class="steps" id="steps-list">
+      <li class="step" id="s-network">
+        <div class="step-dot"></div>
+        <div class="step-body">
+          <span class="step-name">Detecting network</span>
           <span class="step-val" id="sv-network">—</span>
         </div>
-        <div class="step-item" id="s-location">
-          <div class="step-dot"></div>
-          <span class="step-name">Getting location & ISP</span>
+      </li>
+      <li class="step" id="s-location">
+        <div class="step-dot"></div>
+        <div class="step-body">
+          <span class="step-name">Location</span>
           <span class="step-val" id="sv-location">—</span>
         </div>
-        <div class="step-item" id="s-ping">
-          <div class="step-dot"></div>
-          <span class="step-name">Ping latency</span>
+      </li>
+      <li class="step" id="s-ping">
+        <div class="step-dot"></div>
+        <div class="step-body">
+          <span class="step-name">Ping</span>
           <span class="step-val" id="sv-ping">—</span>
         </div>
-        <div class="step-item" id="s-dl">
-          <div class="step-dot"></div>
-          <span class="step-name">Download speed</span>
+      </li>
+      <li class="step" id="s-dl">
+        <div class="step-dot"></div>
+        <div class="step-body">
+          <span class="step-name">Download</span>
           <span class="step-val" id="sv-dl">—</span>
         </div>
-        <div class="step-item" id="s-ul">
-          <div class="step-dot"></div>
-          <span class="step-name">Upload speed</span>
+      </li>
+      <li class="step" id="s-ul">
+        <div class="step-dot"></div>
+        <div class="step-body">
+          <span class="step-name">Upload</span>
           <span class="step-val" id="sv-ul">—</span>
         </div>
+      </li>
+    </ul>
+
+    <p class="test-status" id="test-status">Starting…</p>
+
+    <!-- Result view (shown after test) -->
+    <div class="result-view" id="result-view">
+      <div class="rv-hero">
+        <div class="rv-speed">
+          <span id="rv-num" class="rv-num">0</span>
+          <span class="rv-unit">Mbps</span>
+        </div>
+        <span class="rv-pill" id="rv-pill">—</span>
       </div>
-
-      <p class="test-status" id="test-status">Starting test…</p>
-
-      <!-- Result view (shown after test) -->
-      <div class="result-view" id="result-view">
-        <div class="rv-hero">
-          <div class="rv-speed">
-            <span id="rv-num" class="rv-num">0</span>
-            <span class="rv-unit">Mbps</span>
-          </div>
-          <span class="rv-pill" id="rv-pill">—</span>
+      <p class="rv-caption">↓ Download speed</p>
+      <div class="rv-grid">
+        <div class="rv-stat">
+          <span id="rv-ul" class="rv-sv">0</span>
+          <span class="rv-sl">↑ Upload · Mbps</span>
         </div>
-        <p class="rv-caption">↓ Download speed</p>
-        <div class="rv-grid">
-          <div class="rv-stat">
-            <span id="rv-ul" class="rv-sv">0</span>
-            <span class="rv-sl">↑ Upload · Mbps</span>
-          </div>
-          <div class="rv-stat">
-            <span id="rv-ping" class="rv-sv">0</span>
-            <span class="rv-sl">Ping · ms</span>
-          </div>
-          <div class="rv-stat">
-            <span class="rv-sv rv-sv-sm" id="rv-net">—</span>
-            <span class="rv-sl">Network</span>
-          </div>
-          <div class="rv-stat">
-            <span class="rv-sv rv-sv-sm" id="rv-device">—</span>
-            <span class="rv-sl">Device</span>
-          </div>
-          <div class="rv-stat">
-            <span class="rv-sv rv-sv-sm" id="rv-city">—</span>
-            <span class="rv-sl">Location</span>
-          </div>
-          <div class="rv-stat">
-            <span class="rv-sv rv-sv-sm" id="rv-isp">—</span>
-            <span class="rv-sl">Provider</span>
-          </div>
+        <div class="rv-stat">
+          <span id="rv-ping" class="rv-sv">0</span>
+          <span class="rv-sl">Ping · ms</span>
         </div>
-        <div class="rv-actions">
-          <button id="btn-rv-map" class="btn-primary btn-hero">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"></polygon><line x1="8" y1="2" x2="8" y2="18"></line><line x1="16" y1="6" x2="16" y2="22"></line></svg>
-            <span>View On Global Map</span>
-          </button>
-          <button id="btn-rv-retest" class="btn-ghost btn-hero">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
-            <span>Test Again</span>
-          </button>
-          <button id="btn-share-card" class="btn-ghost btn-hero">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
-            <span>Share Card</span>
-          </button>
-          <button id="btn-rv-home" class="btn-ghost btn-hero">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
-            <span>Go Home</span>
-          </button>
+        <div class="rv-stat">
+          <span class="rv-sv rv-sv-sm" id="rv-net">—</span>
+          <span class="rv-sl">Network</span>
         </div>
-        <p class="rv-note" id="rv-note">Saved to global map</p>
+        <div class="rv-stat">
+          <span class="rv-sv rv-sv-sm" id="rv-device">—</span>
+          <span class="rv-sl">Device</span>
+        </div>
+        <div class="rv-stat">
+          <span class="rv-sv rv-sv-sm" id="rv-city">—</span>
+          <span class="rv-sl">Location</span>
+        </div>
+        <div class="rv-stat">
+          <span class="rv-sv rv-sv-sm" id="rv-isp">—</span>
+          <span class="rv-sl">Provider</span>
+        </div>
       </div>
-
+      <div class="rv-actions">
+        <button id="btn-rv-map" class="btn-primary btn-hero">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"></polygon><line x1="8" y1="2" x2="8" y2="18"></line><line x1="16" y1="6" x2="16" y2="22"></line></svg>
+          <span>View On Global Map</span>
+        </button>
+        <button id="btn-rv-retest" class="btn-ghost btn-hero">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+          <span>Test Again</span>
+        </button>
+        <button id="btn-share-card" class="btn-ghost btn-hero">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+          <span>Share Card</span>
+        </button>
+        <button id="btn-rv-home" class="btn-ghost btn-hero">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+          <span>Go Home</span>
+        </button>
+      </div>
+      <p class="rv-note" id="rv-note">Saved to global map</p>
     </div>
+
   </div>
 </section>
 
@@ -418,6 +426,10 @@
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
           <span>Speed Tiers</span>
         </button>
+        <button class="lb-tab" data-tab="compare">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 3l4 4-4 4M20 7H4M8 21l-4-4 4-4M4 17h16"/></svg>
+          <span>Compare ISPs</span>
+        </button>
       </div>
 
       <div class="lb-content" id="lb-content">
@@ -432,7 +444,10 @@
   <div class="modal-card history-modal">
     <div class="modal-header">
       <h2>My Speed History &amp; Trends</h2>
-      <button class="modal-close" id="close-history">&times;</button>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <button id="btn-export-csv" class="btn-ghost btn-sm" title="Export test log as CSV">Export CSV</button>
+        <button class="modal-close" id="close-history">&times;</button>
+      </div>
     </div>
     <div class="modal-body history-body">
       <div class="sparkline-wrap">

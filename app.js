@@ -226,8 +226,9 @@ function reverseGeocode(lat, lng) {
 function measurePing() {
   var pingUrl = 'https://speed.cloudflare.com/__down?bytes=1024';
   var times = [];
+  var totalAttempts = 5;
   var chain = Promise.resolve();
-  for (var i = 0; i < 5; i++) {
+  for (var i = 0; i < totalAttempts; i++) {
     (function() {
       chain = chain.then(function() {
         var t = performance.now();
@@ -238,8 +239,28 @@ function measurePing() {
     })();
   }
   return chain.then(function() {
-    if (!times.length) return null;
-    return Math.round(times.reduce(function(a, b) { return a + b; }) / times.length);
+    if (!times.length) {
+      state.ping = null;
+      state.jitter = 0;
+      state.packetLoss = 100;
+      return null;
+    }
+    var avgPing = Math.round(times.reduce(function(a, b) { return a + b; }) / times.length);
+    var jitter = 0;
+    if (times.length > 1) {
+      var diffs = [];
+      for (var k = 1; k < times.length; k++) {
+        diffs.push(Math.abs(times[k] - times[k-1]));
+      }
+      jitter = Math.round(diffs.reduce(function(a, b) { return a + b; }) / diffs.length);
+    }
+    var loss = Math.round(((totalAttempts - times.length) / totalAttempts) * 100);
+
+    state.ping = avgPing;
+    state.jitter = jitter;
+    state.packetLoss = loss;
+
+    return avgPing;
   });
 }
 
@@ -381,7 +402,7 @@ function runTest() {
 
     // Step 3: Ping
     setStep('s-ping', 'active', '—');
-    setStatus('Measuring ping…');
+    setStatus('Measuring ping, jitter & loss…');
     setGauge(0, 'ms', 300);
 
     return measurePing();
@@ -389,7 +410,7 @@ function runTest() {
     state.ping = ping;
     if (ping !== null) {
       setGauge(Math.min(ping, 300), 'ms', 300);
-      setStep('s-ping', 'done', ping + ' ms');
+      setStep('s-ping', 'done', ping + ' ms (Jitter: ' + state.jitter + 'ms)');
     } else {
       setStep('s-ping', 'error', 'n/a');
     }
@@ -438,6 +459,8 @@ function runTest() {
       download:    state.download || 0,
       upload:      state.upload   || 0,
       ping:        state.ping     || 0,
+      jitter:      state.jitter   || 0,
+      packetLoss:  state.packetLoss || 0,
       networkType: state.networkType,
       device:      state.device,
       isp:         state.isp,
@@ -457,12 +480,16 @@ function runTest() {
       if (sl) sl.style.display = 'none';
       if (ts) ts.style.display = 'none';
 
-      var nfNum  = document.getElementById('rv-num');
-      var nfUl   = document.getElementById('rv-ul');
-      var nfPing = document.getElementById('rv-ping');
-      if (nfNum)  animateNumber(nfNum, parseFloat(record.download) || 0, 1000, 1);
-      if (nfUl)   animateNumber(nfUl, parseFloat(record.upload)   || 0, 1000, 1);
-      if (nfPing) animateNumber(nfPing, parseInt(record.ping)      || 0, 1000, 0);
+      var nfNum    = document.getElementById('rv-num');
+      var nfUl     = document.getElementById('rv-ul');
+      var nfPing   = document.getElementById('rv-ping');
+      var nfJitter = document.getElementById('rv-jitter');
+      var nfLoss   = document.getElementById('rv-loss');
+      if (nfNum)    animateNumber(nfNum, parseFloat(record.download) || 0, 1000, 1);
+      if (nfUl)     animateNumber(nfUl, parseFloat(record.upload)   || 0, 1000, 1);
+      if (nfPing)   animateNumber(nfPing, parseInt(record.ping)      || 0, 1000, 0);
+      if (nfJitter) animateNumber(nfJitter, parseInt(record.jitter)  || 0, 1000, 0);
+      if (nfLoss)   nfLoss.textContent = (record.packetLoss || 0) + '%';
 
       var rvPill   = document.getElementById('rv-pill');
       var rvNet    = document.getElementById('rv-net');
@@ -883,6 +910,111 @@ function renderLeaderboard(tab, page) {
       return;
     }
 
+    // ── TAB: Compare ISPs Head-to-Head ──────────────────
+    if (currentLbTab === 'compare') {
+      var ispsObj = {};
+      list.forEach(function(r) {
+        if (r.isp && r.isp.trim() && r.isp.trim().toLowerCase() !== 'unknown' && r.isp.trim().toLowerCase() !== 'unknown provider') {
+          var name = r.isp.trim();
+          if (!ispsObj[name]) ispsObj[name] = { count: 0, totalDl: 0, totalUl: 0, totalPing: 0, pings: 0 };
+          ispsObj[name].count++;
+          ispsObj[name].totalDl += (r.download || 0);
+          ispsObj[name].totalUl += (r.upload || 0);
+          if (r.ping > 0) { ispsObj[name].totalPing += r.ping; ispsObj[name].pings++; }
+        }
+      });
+
+      var ispNames = Object.keys(ispsObj);
+      if (ispNames.length < 2) {
+        contentEl.innerHTML = '<p class="rv-note">At least 2 unique ISPs are required for head-to-head comparison. Run tests across providers!</p>';
+        return;
+      }
+
+      var isp1 = window.compareIsp1 || ispNames[0];
+      var isp2 = window.compareIsp2 || (ispNames[1] || ispNames[0]);
+
+      var d1 = ispsObj[isp1] || { count: 1, totalDl: 0, totalUl: 0, totalPing: 0, pings: 1 };
+      var d2 = ispsObj[isp2] || { count: 1, totalDl: 0, totalUl: 0, totalPing: 0, pings: 1 };
+
+      var avgDl1 = (d1.totalDl / d1.count).toFixed(1);
+      var avgDl2 = (d2.totalDl / d2.count).toFixed(1);
+      var avgUl1 = (d1.totalUl / d1.count).toFixed(1);
+      var avgUl2 = (d2.totalUl / d2.count).toFixed(1);
+      var avgP1  = d1.pings ? Math.round(d1.totalPing / d1.pings) : 0;
+      var avgP2  = d2.pings ? Math.round(d2.totalPing / d2.pings) : 0;
+
+      var maxDlVal = Math.max(parseFloat(avgDl1), parseFloat(avgDl2), 10);
+      var maxUlVal = Math.max(parseFloat(avgUl1), parseFloat(avgUl2), 10);
+      var maxPVal  = Math.max(avgP1, avgP2, 10);
+
+      var optionsHtml1 = ispNames.map(function(n) { return '<option value="' + n + '"' + (n === isp1 ? ' selected' : '') + '>' + n + '</option>'; }).join('');
+      var optionsHtml2 = ispNames.map(function(n) { return '<option value="' + n + '"' + (n === isp2 ? ' selected' : '') + '>' + n + '</option>'; }).join('');
+
+      var winDl1 = parseFloat(avgDl1) >= parseFloat(avgDl2);
+      var winP1  = avgP1 <= avgP2;
+
+      contentEl.innerHTML =
+        '<div class="compare-container">' +
+          '<div class="compare-selectors">' +
+            '<select id="cmp-sel-1" class="compare-select">' + optionsHtml1 + '</select>' +
+            '<div class="compare-vs-badge">VS</div>' +
+            '<select id="cmp-sel-2" class="compare-select">' + optionsHtml2 + '</select>' +
+          '</div>' +
+
+          '<div class="compare-battle-card">' +
+            '<div class="compare-metric-group">' +
+              '<span class="cm-label">↓ Average Download Speed</span>' +
+              '<div class="cm-bars">' +
+                '<div class="cm-bar-wrap">' +
+                  '<div class="cm-bar-info"><span>' + isp1 + '</span><span>' + avgDl1 + ' Mbps ' + (winDl1 ? '<span class="winner-badge">WINNER</span>' : '') + '</span></div>' +
+                  '<div class="cm-bar-bg"><div class="cm-bar-fill cm-fill-1" style="width:' + Math.round((avgDl1/maxDlVal)*100) + '%"></div></div>' +
+                '</div>' +
+                '<div class="cm-bar-wrap">' +
+                  '<div class="cm-bar-info"><span>' + isp2 + '</span><span>' + avgDl2 + ' Mbps ' + (!winDl1 ? '<span class="winner-badge">WINNER</span>' : '') + '</span></div>' +
+                  '<div class="cm-bar-bg"><div class="cm-bar-fill cm-fill-2" style="width:' + Math.round((avgDl2/maxDlVal)*100) + '%"></div></div>' +
+                '</div>' +
+              '</div>' +
+            '</div>' +
+
+            '<div class="compare-metric-group">' +
+              '<span class="cm-label">↑ Average Upload Speed</span>' +
+              '<div class="cm-bars">' +
+                '<div class="cm-bar-wrap">' +
+                  '<div class="cm-bar-info"><span>' + isp1 + '</span><span>' + avgUl1 + ' Mbps</span></div>' +
+                  '<div class="cm-bar-bg"><div class="cm-bar-fill cm-fill-1" style="width:' + Math.round((avgUl1/maxUlVal)*100) + '%"></div></div>' +
+                '</div>' +
+                '<div class="cm-bar-wrap">' +
+                  '<div class="cm-bar-info"><span>' + isp2 + '</span><span>' + avgUl2 + ' Mbps</span></div>' +
+                  '<div class="cm-bar-bg"><div class="cm-bar-fill cm-fill-2" style="width:' + Math.round((avgUl2/maxUlVal)*100) + '%"></div></div>' +
+                '</div>' +
+              '</div>' +
+            '</div>' +
+
+            '<div class="compare-metric-group">' +
+              '<span class="cm-label">Average Ping Latency (Lower is better)</span>' +
+              '<div class="cm-bars">' +
+                '<div class="cm-bar-wrap">' +
+                  '<div class="cm-bar-info"><span>' + isp1 + '</span><span>' + avgP1 + ' ms ' + (winP1 ? '<span class="winner-badge">FASTEST</span>' : '') + '</span></div>' +
+                  '<div class="cm-bar-bg"><div class="cm-bar-fill cm-fill-1" style="width:' + Math.round((avgP1/maxPVal)*100) + '%"></div></div>' +
+                '</div>' +
+                '<div class="cm-bar-wrap">' +
+                  '<div class="cm-bar-info"><span>' + isp2 + '</span><span>' + avgP2 + ' ms ' + (!winP1 ? '<span class="winner-badge">FASTEST</span>' : '') + '</span></div>' +
+                  '<div class="cm-bar-bg"><div class="cm-bar-fill cm-fill-2" style="width:' + Math.round((avgP2/maxPVal)*100) + '%"></div></div>' +
+                '</div>' +
+              '</div>' +
+            '</div>' +
+          '</div>' +
+        '</div>';
+
+      setTimeout(function() {
+        var s1 = document.getElementById('cmp-sel-1');
+        var s2 = document.getElementById('cmp-sel-2');
+        if (s1) s1.addEventListener('change', function(e) { window.compareIsp1 = e.target.value; renderLeaderboard('compare'); });
+        if (s2) s2.addEventListener('change', function(e) { window.compareIsp2 = e.target.value; renderLeaderboard('compare'); });
+      }, 50);
+      return;
+    }
+
     // ── TAB: ISPs or Cities (with Unknown Filter & Pagination) ──
     var groups = {};
     list.forEach(function(r) {
@@ -1262,6 +1394,40 @@ function drawSparkline(history) {
   });
 }
 
+function exportHistoryCSV() {
+  var history = lsLoad() || [];
+  if (!history.length) {
+    alert('No local test history recorded yet. Run a speed test first!');
+    return;
+  }
+  var headers = ['Timestamp', 'Date', 'Download_Mbps', 'Upload_Mbps', 'Ping_ms', 'Jitter_ms', 'PacketLoss_pct', 'Network', 'Device', 'ISP', 'City'];
+  var rows = history.map(function(item) {
+    var d = new Date(item.ts || Date.now()).toISOString();
+    return [
+      item.ts || Date.now(),
+      '"' + d + '"',
+      item.download || 0,
+      item.upload || 0,
+      item.ping || 0,
+      item.jitter || 0,
+      (item.packetLoss || 0) + '%',
+      '"' + (item.networkType || '') + '"',
+      '"' + (item.device || '') + '"',
+      '"' + (item.isp || '') + '"',
+      '"' + (item.city || '') + '"'
+    ].join(',');
+  });
+
+  var csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(',')].concat(rows).join('\n');
+  var encodedUri = encodeURI(csvContent);
+  var link = document.createElement('a');
+  link.setAttribute('href', encodedUri);
+  link.setAttribute('download', 'SpeedMap_Test_History.csv');
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
 // ── Wire up all buttons ───────────────────────────────
 document.addEventListener('DOMContentLoaded', function() {
   initFirebase();
@@ -1281,12 +1447,15 @@ document.addEventListener('DOMContentLoaded', function() {
   var btnNavHistory = document.getElementById('btn-nav-history');
   var btnBarHistory = document.getElementById('btn-bar-history');
   var closeHistory  = document.getElementById('close-history');
+  var btnExportCSV  = document.getElementById('btn-export-csv');
 
   var btnNavLb   = document.getElementById('btn-nav-leaderboard');
   var btnBarLb   = document.getElementById('btn-bar-leaderboard');
   var btnShare   = document.getElementById('btn-share-card');
   var closeShare = document.getElementById('close-share');
   var btnDlCard  = document.getElementById('btn-download-card');
+
+  if (btnExportCSV) btnExportCSV.addEventListener('click', exportHistoryCSV);
 
   var btnLbBackMap  = document.getElementById('btn-lb-back-map');
   var btnLbTest     = document.getElementById('btn-lb-test');
