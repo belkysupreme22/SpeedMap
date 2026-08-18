@@ -509,6 +509,11 @@ function runTest() {
       if (rv) rv.classList.add('show');
 
       showToast(ok ? 'Result saved to global map' : 'Saved locally', ok ? 'ok' : 'warn');
+
+      allResults().then(function(res) {
+        initMiniMap(res);
+        startActivityTicker(res);
+      });
     });
   }).catch(function(err) {
     console.error('[SpeedMap] Test error:', err);
@@ -1519,9 +1524,84 @@ document.addEventListener('DOMContentLoaded', function() {
   var legClear = document.getElementById('leg-clear');
   if (legClear) legClear.addEventListener('click', clearFilters);
 
-  // Fetch full remote results and update stats & health banner
+  // Fetch full remote results and update stats, health banner, mini map & ticker
   allResults().then(function(res) {
     updateStats(res);
     updateHealthBanner(res);
+    initMiniMap(res);
+    startActivityTicker(res);
   }).catch(function(e){ console.warn('Stats load warning:', e); });
+
+  var heroMapCard = document.getElementById('hero-map-card');
+  if (heroMapCard) heroMapCard.addEventListener('click', goToMap);
 });
+
+var miniMap = null;
+function initMiniMap(results) {
+  var container = document.getElementById('mini-map');
+  if (!container || typeof L === 'undefined') return;
+
+  var list = (results || []).filter(function(r) { return r.lat && r.lng && r.download > 0; });
+  // Sort latest tests first
+  list.sort(function(a, b) { return (b.ts || b.timestamp || 0) - (a.ts || a.timestamp || 0); });
+
+  try {
+    if (!miniMap) {
+      miniMap = L.map('mini-map', {
+        center: [20, 0],
+        zoom: 2,
+        zoomControl: false,
+        attributionControl: false,
+        dragging: true,
+        scrollWheelZoom: false,
+        doubleClickZoom: false
+      });
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 18 }).addTo(miniMap);
+    }
+
+    var bounds = [];
+    list.slice(0, 30).forEach(function(r) {
+      var dl = parseFloat(r.download) || 0;
+      var col = speedColor(dl);
+      var isp = (r.isp && r.isp.trim() && r.isp.trim().toLowerCase() !== 'unknown') ? r.isp.trim() : 'Unknown Provider';
+      var city = r.city || 'Global Location';
+
+      var marker = L.circleMarker([r.lat, r.lng], {
+        radius: 6, fillColor: col, color: '#000000',
+        weight: 1.2, fillOpacity: 0.95
+      }).bindTooltip('<strong>' + dl + ' Mbps</strong> · ' + isp + ' (' + city + ')', { direction: 'top' });
+
+      marker.addTo(miniMap);
+      bounds.push([r.lat, r.lng]);
+    });
+
+    if (bounds.length > 0) {
+      miniMap.fitBounds(bounds, { padding: [20, 20], maxZoom: 6 });
+    }
+  } catch(e) { console.warn('Mini map init error:', e); }
+}
+
+function startActivityTicker(results) {
+  var tickerEl = document.getElementById('ticker-msg');
+  if (!tickerEl) return;
+  var list = (results || []).filter(function(r) { return r.download > 0; });
+  if (!list.length) {
+    tickerEl.textContent = '⚡ Live internet throughput tests mapping worldwide...';
+    return;
+  }
+
+  var idx = 0;
+  function updateTicker() {
+    var r = list[idx % list.length];
+    var dl = (parseFloat(r.download) || 0).toFixed(1);
+    var isp = (r.isp && r.isp.trim() && r.isp.trim().toLowerCase() !== 'unknown') ? r.isp.trim() : (r.city || 'Verified User');
+    var city = r.city || 'Global Location';
+    var ago = timeAgo(r.ts || r.timestamp);
+
+    tickerEl.innerHTML = '⚡ <strong>' + ago + '</strong> &middot; <strong style="color:var(--accent)">' + dl + ' Mbps</strong> &middot; ' + isp + ' (' + city + ')';
+    idx++;
+  }
+
+  updateTicker();
+  setInterval(updateTicker, 4000);
+}
