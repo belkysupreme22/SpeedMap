@@ -588,6 +588,12 @@ function renderMarkers(results) {
   markerLayer.clearLayers();
   if (heatLayer) { leafMap.removeLayer(heatLayer); heatLayer = null; }
 
+  if (window.activeIspFilter) {
+    results = (results || []).filter(function(r) {
+      return normalizeIspName(r.isp).toLowerCase() === window.activeIspFilter.toLowerCase();
+    });
+  }
+
   var emptyBanner = document.getElementById('map-empty-banner');
   if (!results || results.length === 0) {
     if (!emptyBanner) {
@@ -919,8 +925,8 @@ function renderLeaderboard(tab, page) {
     if (currentLbTab === 'compare') {
       var ispsObj = {};
       list.forEach(function(r) {
-        if (r.isp && r.isp.trim() && r.isp.trim().toLowerCase() !== 'unknown' && r.isp.trim().toLowerCase() !== 'unknown provider') {
-          var name = r.isp.trim();
+        var name = normalizeIspName(r.isp);
+        if (name !== 'Unknown Provider') {
           if (!ispsObj[name]) ispsObj[name] = { count: 0, totalDl: 0, totalUl: 0, totalPing: 0, pings: 0 };
           ispsObj[name].count++;
           ispsObj[name].totalDl += (r.download || 0);
@@ -1024,12 +1030,15 @@ function renderLeaderboard(tab, page) {
     var groups = {};
     list.forEach(function(r) {
       if (currentLbTab === 'isps') {
-        if (!r.isp || !r.isp.trim() || r.isp.trim().toLowerCase() === 'unknown' || r.isp.trim().toLowerCase() === 'unknown provider') return;
-      }
-      if (currentLbTab === 'cities') {
+        var ispName = normalizeIspName(r.isp);
+        if (ispName === 'Unknown Provider') return;
+        var key = ispName;
+      } else if (currentLbTab === 'cities') {
         if (!r.city || !r.city.trim() || r.city.trim().toLowerCase() === 'unknown' || r.city.trim().toLowerCase() === 'unknown location') return;
+        var key = r.city.trim();
+      } else {
+        var key = r.city || 'Global';
       }
-      var key = currentLbTab === 'isps' ? r.isp.trim() : r.city.trim();
       if (!groups[key]) groups[key] = { count: 0, totalDl: 0, totalUl: 0, totalPing: 0, pings: 0 };
       groups[key].count++;
       groups[key].totalDl += (r.download || 0);
@@ -1454,6 +1463,10 @@ document.addEventListener('DOMContentLoaded', function() {
   var closeHistory  = document.getElementById('close-history');
   var btnExportCSV  = document.getElementById('btn-export-csv');
 
+  var btnNavOutages     = document.getElementById('btn-nav-outages');
+  var btnBarOutages     = document.getElementById('btn-bar-outages');
+  var btnInspectOutages = document.getElementById('btn-inspect-outages');
+
   var btnNavLb   = document.getElementById('btn-nav-leaderboard');
   var btnBarLb   = document.getElementById('btn-bar-leaderboard');
   var btnShare   = document.getElementById('btn-share-card');
@@ -1461,6 +1474,10 @@ document.addEventListener('DOMContentLoaded', function() {
   var btnDlCard  = document.getElementById('btn-download-card');
 
   if (btnExportCSV) btnExportCSV.addEventListener('click', exportHistoryCSV);
+
+  if (btnNavOutages)     btnNavOutages.addEventListener('click', function() { openOutagePage('all'); });
+  if (btnBarOutages)     btnBarOutages.addEventListener('click', function() { openOutagePage('all'); });
+  if (btnInspectOutages) btnInspectOutages.addEventListener('click', function() { openOutagePage('critical'); });
 
   var btnLbBackMap  = document.getElementById('btn-lb-back-map');
   var btnLbTest     = document.getElementById('btn-lb-test');
@@ -1506,11 +1523,16 @@ document.addEventListener('DOMContentLoaded', function() {
       closeLeaderboard();
       closeShareModal();
       closeHistoryModal();
+      closeOutageModal();
     }
   });
 
   document.querySelectorAll('.lb-tab').forEach(function(tabEl) {
     tabEl.addEventListener('click', function() { renderLeaderboard(tabEl.dataset.tab); });
+  });
+
+  document.querySelectorAll('.outage-tab').forEach(function(tabEl) {
+    tabEl.addEventListener('click', function() { openOutagePage(tabEl.dataset.filter); });
   });
 
   // Navigation back to Landing Page on logo/brand click
@@ -1524,13 +1546,20 @@ document.addEventListener('DOMContentLoaded', function() {
   var legClear = document.getElementById('leg-clear');
   if (legClear) legClear.addEventListener('click', clearFilters);
 
-  // Fetch full remote results and update stats, health banner, mini map & ticker
-  allResults().then(function(res) {
-    updateStats(res);
-    updateHealthBanner(res);
-    initMiniMap(res);
-    startActivityTicker(res);
-  }).catch(function(e){ console.warn('Stats load warning:', e); });
+  // Fetch full remote results and update stats, health banner, mini map, ticker & anomaly detector
+  function refreshGlobalData() {
+    allResults().then(function(res) {
+      updateStats(res);
+      updateHealthBanner(res);
+      initMiniMap(res);
+      detectNetworkAnomalies(res);
+    }).catch(function(e){ console.warn('Stats load warning:', e); });
+  }
+
+  refreshGlobalData();
+  setInterval(refreshGlobalData, 15000);
+
+  allResults().then(startActivityTicker).catch(function(){});
 
   var heroMapCard = document.getElementById('hero-map-card');
   if (heroMapCard) heroMapCard.addEventListener('click', goToMap);
@@ -1604,4 +1633,230 @@ function startActivityTicker(results) {
 
   updateTicker();
   setInterval(updateTicker, 4000);
+}
+
+// ── Live Network Anomaly & Outage Detector ────────────────
+// ── ISP Name Normalization & Deduplication ─────────────────
+function normalizeIspName(raw) {
+  if (!raw || !raw.trim()) return 'Unknown Provider';
+  var clean = raw.replace(/^AS\d+\s*/i, '').trim();
+  if (!clean || clean.toLowerCase() === 'unknown' || clean.toLowerCase() === 'unknown provider') {
+    return 'Unknown Provider';
+  }
+  return clean.split(/\s+/).map(function(w) {
+    if (/^(isp|ip|vpn|3g|4g|5g|wifi|dslam|asn)$/i.test(w)) return w.toUpperCase();
+    return w.charAt(0).toUpperCase() + w.slice(1).toLowerCase();
+  }).join(' ');
+}
+
+var activeTiers = { slow: false, mid: false, fast: false, ultra: false };
+window.activeIspFilter = null;
+
+function toggleFilter(tier) {
+  if (tier) activeTiers[tier] = !activeTiers[tier];
+  updateLegendUI();
+  allResults().then(renderMarkers);
+}
+
+function clearFilters() {
+  activeTiers = { slow: false, mid: false, fast: false, ultra: false };
+  window.activeIspFilter = null;
+  updateLegendUI();
+  allResults().then(renderMarkers);
+  showToast('Reset map filters (showing all data)', 'info');
+}
+
+function updateLegendUI() {
+  var leg = document.getElementById('map-legend');
+  var isAnyTier = Object.keys(activeTiers).some(function(t) { return activeTiers[t]; });
+  var isIspActive = !!window.activeIspFilter;
+
+  document.querySelectorAll('.leg-item').forEach(function(el) {
+    el.classList.toggle('active', !!activeTiers[el.dataset.tier]);
+  });
+
+  if (leg) {
+    leg.classList.toggle('filtering', isAnyTier || isIspActive);
+  }
+
+  var legClear = document.getElementById('leg-clear');
+  if (legClear) {
+    legClear.textContent = 'Reset';
+  }
+}
+
+function filterMapByIsp(ispName) {
+  window.activeIspFilter = ispName;
+  updateLegendUI();
+  goToMap();
+  showToast('Filtering map markers to ' + ispName, 'ok');
+}
+
+function detectNetworkAnomalies(results) {
+  var list = (results || []).filter(function(r) { return r.download > 0; });
+  if (!list.length) return [];
+
+  var groups = {};
+  list.forEach(function(r) {
+    var isp = normalizeIspName(r.isp);
+    if (isp === 'Unknown Provider') return;
+    var key = isp.toLowerCase();
+    var city = (r.city && r.city.trim() && r.city.trim().toLowerCase() !== 'unknown') ? r.city.trim() : '';
+
+    if (!groups[key]) {
+      groups[key] = { key: key, isp: isp, cities: {}, pings: [], downloads: [], items: [] };
+    }
+    groups[key].items.push(r);
+    if (city) groups[key].cities[city] = (groups[key].cities[city] || 0) + 1;
+    if (r.ping > 0) groups[key].pings.push(r.ping);
+    if (r.download > 0) groups[key].downloads.push(r.download);
+  });
+
+  var anomalies = [];
+  Object.keys(groups).forEach(function(key) {
+    var g = groups[key];
+    if (g.pings.length < 1) return;
+
+    var avgPing = Math.round(g.pings.reduce(function(a,b){ return a+b; }, 0) / g.pings.length);
+    var avgDl = parseFloat((g.downloads.reduce(function(a,b){ return a+b; }, 0) / g.downloads.length).toFixed(1));
+    var maxPing = Math.max.apply(null, g.pings);
+
+    var cityList = Object.keys(g.cities);
+    var locSummary = cityList.length > 0 ? cityList.slice(0, 3).join(', ') : 'Global Locations';
+
+    var severity = 'STABLE';
+    var type = 'Normal Operation';
+    var desc = 'Performance within expected threshold (' + avgDl + ' Mbps · ' + avgPing + ' ms latency)';
+
+    if (maxPing >= 160 || avgPing >= 120) {
+      severity = 'CRITICAL';
+      type = 'Severe Latency Outage';
+      desc = 'High latency spike detected (' + maxPing + ' ms max latency · Avg ' + avgPing + ' ms)';
+    } else if (avgPing >= 75 || avgDl < 12) {
+      severity = 'WARNING';
+      type = 'Regional Performance Degraded';
+      desc = 'Moderate throughput slowdown detected (' + avgDl + ' Mbps avg)';
+    }
+
+    anomalies.push({
+      key: key,
+      isp: g.isp,
+      city: locSummary,
+      severity: severity,
+      type: type,
+      desc: desc,
+      avgDl: avgDl,
+      avgPing: avgPing,
+      count: g.items.length
+    });
+  });
+
+  // Sort critical warnings first
+  anomalies.sort(function(a,b) {
+    var order = { CRITICAL: 0, WARNING: 1, STABLE: 2 };
+    return order[a.severity] - order[b.severity];
+  });
+
+  activeAnomalies = anomalies;
+  renderOutageBanner(anomalies);
+  return anomalies;
+}
+
+function renderOutageBanner(anomalies) {
+  var banner = document.getElementById('outage-map-banner');
+  var titleEl = document.getElementById('omb-title');
+  if (!banner || !titleEl) return;
+
+  var alerts = (anomalies || []).filter(function(a) { return a.severity === 'CRITICAL' || a.severity === 'WARNING'; });
+
+  if (alerts.length > 0) {
+    var topAlert = alerts[0];
+    titleEl.textContent = topAlert.severity + ': ' + topAlert.isp + ' in ' + topAlert.city + ' (' + topAlert.type + ')';
+    banner.style.display = 'flex';
+  } else {
+    banner.style.display = 'none';
+  }
+}
+
+var currentOutageFilter = 'all';
+
+function openOutagePage(filter) {
+  if (filter) currentOutageFilter = filter;
+  showScreen('screen-outages');
+
+  var anomalies = activeAnomalies.length ? activeAnomalies : detectNetworkAnomalies(lsLoad());
+
+  var cntAll  = anomalies.length;
+  var cntCrit = anomalies.filter(function(a){ return a.severity === 'CRITICAL'; }).length;
+  var cntWarn = anomalies.filter(function(a){ return a.severity === 'WARNING'; }).length;
+  var cntStab = anomalies.filter(function(a){ return a.severity === 'STABLE'; }).length;
+
+  var elAll  = document.getElementById('cnt-all');
+  var elCrit = document.getElementById('cnt-critical');
+  var elWarn = document.getElementById('cnt-warning');
+  var elStab = document.getElementById('cnt-stable');
+
+  if (elAll)  elAll.textContent  = cntAll;
+  if (elCrit) elCrit.textContent = cntCrit;
+  if (elWarn) elWarn.textContent = cntWarn;
+  if (elStab) elStab.textContent = cntStab;
+
+  document.querySelectorAll('.outage-tab').forEach(function(tab) {
+    if (tab.dataset.filter === currentOutageFilter) tab.classList.add('active');
+    else tab.classList.remove('active');
+  });
+
+  var filtered = anomalies.filter(function(item) {
+    if (currentOutageFilter === 'all') return true;
+    return item.severity.toLowerCase() === currentOutageFilter;
+  });
+
+  var listEl = document.getElementById('outage-page-list');
+  if (listEl) {
+    if (!filtered.length) {
+      listEl.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px 0;"><p class="rv-note">No regions found matching filter "' + currentOutageFilter.toUpperCase() + '". All mapped networks operating within threshold.</p></div>';
+    } else {
+      var html = '';
+      filtered.forEach(function(item) {
+        var badgeClass = 'severity-' + item.severity.toLowerCase();
+        var reportText = item.severity + ' Alert: ' + item.isp + ' in ' + item.city + ' (' + item.desc + ') via SpeedMap';
+
+        html +=
+          '<div class="outage-item-row">' +
+            '<div class="oir-main">' +
+              '<div class="oir-title-wrap">' +
+                '<span class="oir-isp">' + item.isp + '</span>' +
+                '<span class="severity-badge ' + badgeClass + '">' + item.severity + '</span>' +
+              '</div>' +
+              '<span class="oir-loc">' + item.city + ' &middot; ' + item.count + ' verified test' + (item.count !== 1 ? 's' : '') + '</span>' +
+            '</div>' +
+            '<div class="oir-metrics">' +
+              '<div class="oir-pill"><span class="oir-pill-lbl">Avg Speed</span><span class="oir-pill-val">' + item.avgDl + ' Mbps</span></div>' +
+              '<div class="oir-pill"><span class="oir-pill-lbl">Avg Latency</span><span class="oir-pill-val">' + item.avgPing + ' ms</span></div>' +
+              '<div class="oir-pill"><span class="oir-pill-lbl">Status Note</span><span class="oir-pill-val" style="font-size:.78rem;color:var(--t2)">' + item.type + '</span></div>' +
+            '</div>' +
+            '<div class="oir-actions">' +
+              '<button class="oi-btn oi-btn-primary" onclick="filterMapByIsp(\'' + escapeHtml(item.isp) + '\')">Filter Map</button>' +
+              '<button class="oi-btn" onclick="startTest();">Test My Connection</button>' +
+              '<button class="oi-btn" onclick="copyOutageReport(\'' + escapeHtml(reportText) + '\')">Copy Report</button>' +
+            '</div>' +
+          '</div>';
+      });
+      listEl.innerHTML = html;
+    }
+  }
+}
+
+function escapeHtml(str) {
+  return String(str).replace(/'/g, "\\'").replace(/"/g, '&quot;');
+}
+
+function copyOutageReport(text) {
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(function() {
+      showToast('Outage report copied to clipboard!', 'ok');
+    });
+  } else {
+    showToast('Report: ' + text, 'info');
+  }
 }
