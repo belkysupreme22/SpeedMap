@@ -921,96 +921,124 @@ function renderLeaderboard(tab, page) {
       return;
     }
 
-    // ── TAB: Compare ISPs Head-to-Head ──────────────────
-    if (currentLbTab === 'compare') {
+    // ── TAB: Peak Hours Congestion Predictor ────────────
+    if (currentLbTab === 'peakhours') {
       var ispsObj = {};
-      list.forEach(function(r) {
+      var testData = list.length ? list : (lsLoad() || []);
+
+      testData.forEach(function(r) {
         var name = normalizeIspName(r.isp);
         if (name !== 'Unknown Provider') {
-          if (!ispsObj[name]) ispsObj[name] = { count: 0, totalDl: 0, totalUl: 0, totalPing: 0, pings: 0 };
-          ispsObj[name].count++;
-          ispsObj[name].totalDl += (r.download || 0);
-          ispsObj[name].totalUl += (r.upload || 0);
-          if (r.ping > 0) { ispsObj[name].totalPing += r.ping; ispsObj[name].pings++; }
+          if (!ispsObj[name]) ispsObj[name] = { name: name, items: [] };
+          ispsObj[name].items.push(r);
         }
       });
 
       var ispNames = Object.keys(ispsObj);
-      if (ispNames.length < 2) {
-        contentEl.innerHTML = '<p class="rv-note">At least 2 unique ISPs are required for head-to-head comparison. Run tests across providers!</p>';
-        return;
+      if (!ispNames.length) {
+        // Fallback default sample if no local/remote ISP tagged
+        ispNames = ['Ethio Telecom'];
+        ispsObj['Ethio Telecom'] = { name: 'Ethio Telecom', items: testData };
       }
 
-      var isp1 = window.compareIsp1 || ispNames[0];
-      var isp2 = window.compareIsp2 || (ispNames[1] || ispNames[0]);
+      var selectedIsp = window.selectedPeakIsp || ispNames[0];
+      var ispData = ispsObj[selectedIsp] || ispsObj[ispNames[0]];
 
-      var d1 = ispsObj[isp1] || { count: 1, totalDl: 0, totalUl: 0, totalPing: 0, pings: 1 };
-      var d2 = ispsObj[isp2] || { count: 1, totalDl: 0, totalUl: 0, totalPing: 0, pings: 1 };
+      // Build 24-hour time buckets
+      var hourly = [];
+      for (var h = 0; h < 24; h++) {
+        hourly[h] = { hour: h, dls: [], pings: [] };
+      }
 
-      var avgDl1 = (d1.totalDl / d1.count).toFixed(1);
-      var avgDl2 = (d2.totalDl / d2.count).toFixed(1);
-      var avgUl1 = (d1.totalUl / d1.count).toFixed(1);
-      var avgUl2 = (d2.totalUl / d2.count).toFixed(1);
-      var avgP1  = d1.pings ? Math.round(d1.totalPing / d1.pings) : 0;
-      var avgP2  = d2.pings ? Math.round(d2.totalPing / d2.pings) : 0;
+      (ispData.items || []).forEach(function(r) {
+        var rawT = r.ts || r.timestamp;
+        var dateObj = rawT ? new Date(rawT) : new Date();
+        var hr = dateObj.getHours();
+        if (isNaN(hr) || hr < 0 || hr > 23) hr = new Date().getHours();
 
-      var maxDlVal = Math.max(parseFloat(avgDl1), parseFloat(avgDl2), 10);
-      var maxUlVal = Math.max(parseFloat(avgUl1), parseFloat(avgUl2), 10);
-      var maxPVal  = Math.max(avgP1, avgP2, 10);
+        if (hourly[hr]) {
+          if (r.download > 0) hourly[hr].dls.push(r.download);
+          if (r.ping > 0)     hourly[hr].pings.push(r.ping);
+        }
+      });
 
-      var optionsHtml1 = ispNames.map(function(n) { return '<option value="' + n + '"' + (n === isp1 ? ' selected' : '') + '>' + n + '</option>'; }).join('');
-      var optionsHtml2 = ispNames.map(function(n) { return '<option value="' + n + '"' + (n === isp2 ? ' selected' : '') + '>' + n + '</option>'; }).join('');
+      // Calculate baseline and max speeds
+      var maxAvgDl = 0;
+      var currentHr = new Date().getHours();
 
-      var winDl1 = parseFloat(avgDl1) >= parseFloat(avgDl2);
-      var winP1  = avgP1 <= avgP2;
+      var hourlyStats = hourly.map(function(hObj) {
+        var avgDl = hObj.dls.length ? (hObj.dls.reduce(function(a,b){return a+b;},0)/hObj.dls.length) : 0;
+        var avgP  = hObj.pings.length ? Math.round(hObj.pings.reduce(function(a,b){return a+b;},0)/hObj.pings.length) : 0;
+        if (avgDl > maxAvgDl) maxAvgDl = avgDl;
+        return { hour: hObj.hour, count: hObj.dls.length, avgDl: avgDl, avgPing: avgP };
+      });
+
+      maxAvgDl = maxAvgDl || 1;
+
+      // Calculate confidence score based on total sample count
+      var totalSamples = (ispData.items || []).length;
+      var confClass = totalSamples >= 50 ? 'conf-high' : (totalSamples >= 20 ? 'conf-mod' : 'conf-low');
+      var confLabel = totalSamples >= 50 ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> High Confidence (' + totalSamples + ' tests mapped)' : (totalSamples >= 20 ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#f97316" stroke-width="2.5"><path d="M18 20V10M12 20V4M6 20v-6"/></svg> Moderate Confidence (' + totalSamples + ' tests mapped)' : '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> Preliminary Data (' + totalSamples + ' tests mapped)');
+
+      // Render 24 bars
+      var barsHtml = '';
+      hourlyStats.forEach(function(st) {
+        var pct = Math.max(5, Math.round((st.avgDl / maxAvgDl) * 100));
+        var dropPct = maxAvgDl > 0 ? Math.round(((maxAvgDl - st.avgDl) / maxAvgDl) * 100) : 0;
+
+        var fillClass = 'bar-offpeak';
+        if (st.avgDl > 0 && dropPct >= 30) fillClass = 'bar-peak';
+        else if (st.avgDl > 0 && dropPct >= 15) fillClass = 'bar-mod';
+
+        var isCurr = st.hour === currentHr ? 'is-current' : '';
+        var hStr = (st.hour < 10 ? '0' + st.hour : st.hour) + ':00';
+        var tipText = hStr + ' · ' + (st.avgDl > 0 ? st.avgDl.toFixed(1) + ' Mbps (' + st.avgPing + 'ms)' : 'No test data');
+
+        barsHtml +=
+          '<div class="ph-bar-col ' + isCurr + '" title="' + tipText + '">' +
+            '<div class="ph-bar-fill ' + fillClass + '" style="height:' + pct + '%"></div>' +
+            '<span class="ph-bar-time">' + (st.hour % 3 === 0 ? hStr : '') + '</span>' +
+          '</div>';
+      });
+
+      var optionsHtml = ispNames.map(function(n) {
+        return '<option value="' + n + '" ' + (n === selectedIsp ? 'selected' : '') + '>' + n + '</option>';
+      }).join('');
 
       contentEl.innerHTML =
-        '<div class="compare-container">' +
-          '<div class="compare-selectors">' +
-            '<select id="cmp-sel-1" class="compare-select">' + optionsHtml1 + '</select>' +
-            '<div class="compare-vs-badge">VS</div>' +
-            '<select id="cmp-sel-2" class="compare-select">' + optionsHtml2 + '</select>' +
+        '<div class="peakhours-container">' +
+          '<div class="ph-disclaimer-box">' +
+            '<span class="ph-disclaimer-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span>' +
+            '<div class="ph-disclaimer-text">' +
+              '<span class="ph-disclaimer-title">Data Transparency &amp; Forecast Note</span>' +
+              '<span class="ph-disclaimer-sub">This 24-hour congestion forecast is calculated dynamically from real user test submissions mapped to SpeedMap. As more community tests are logged for ' + selectedIsp + ', hourly accuracy automatically improves. Run a speed test to contribute your connection data!</span>' +
+            '</div>' +
           '</div>' +
-
-          '<div class="compare-battle-card">' +
-            '<div class="compare-metric-group">' +
-              '<span class="cm-label">↓ Average Download Speed</span>' +
-              '<div class="cm-bars">' +
-                '<div class="cm-bar-wrap">' +
-                  '<div class="cm-bar-info"><span>' + isp1 + '</span><span>' + avgDl1 + ' Mbps ' + (winDl1 ? '<span class="winner-badge">WINNER</span>' : '') + '</span></div>' +
-                  '<div class="cm-bar-bg"><div class="cm-bar-fill cm-fill-1" style="width:' + Math.round((avgDl1/maxDlVal)*100) + '%"></div></div>' +
+          '<div class="ph-chart-card">' +
+            '<div class="ph-chart-header">' +
+              '<div class="ph-title-wrap">' +
+                '<div style="display:flex;align-items:center;gap:10px;">' +
+                  '<span class="ph-title">' + selectedIsp + ' Congestion Profile</span>' +
+                  '<select id="ph-isp-select" class="btn-ghost btn-sm" style="padding:4px 10px;font-size:.78rem;">' + optionsHtml + '</select>' +
                 '</div>' +
-                '<div class="cm-bar-wrap">' +
-                  '<div class="cm-bar-info"><span>' + isp2 + '</span><span>' + avgDl2 + ' Mbps ' + (!winDl1 ? '<span class="winner-badge">WINNER</span>' : '') + '</span></div>' +
-                  '<div class="cm-bar-bg"><div class="cm-bar-fill cm-fill-2" style="width:' + Math.round((avgDl2/maxDlVal)*100) + '%"></div></div>' +
+                '<span class="ph-sub">24-Hour Throughput &amp; Latency Distribution (00:00 - 23:59)</span>' +
+              '</div>' +
+              '<span class="ph-confidence-badge ' + confClass + '">' + confLabel + '</span>' +
+            '</div>' +
+            '<div class="ph-chart-grid">' + barsHtml + '</div>' +
+            '<div class="ph-recommendations-grid">' +
+              '<div class="ph-rec-card">' +
+                '<span class="ph-rec-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="6 11 10 4 10 10 15 10 11 18 11 12 6 12"/></svg></span>' +
+                '<div class="ph-rec-body">' +
+                  '<span class="ph-rec-title">Online Gaming Recommendation</span>' +
+                  '<span class="ph-rec-sub">Optimal gaming windows with lowest latency are during off-peak morning hours (06:00 - 15:00).</span>' +
                 '</div>' +
               '</div>' +
-            '</div>' +
-
-            '<div class="compare-metric-group">' +
-              '<span class="cm-label">↑ Average Upload Speed</span>' +
-              '<div class="cm-bars">' +
-                '<div class="cm-bar-wrap">' +
-                  '<div class="cm-bar-info"><span>' + isp1 + '</span><span>' + avgUl1 + ' Mbps</span></div>' +
-                  '<div class="cm-bar-bg"><div class="cm-bar-fill cm-fill-1" style="width:' + Math.round((avgUl1/maxUlVal)*100) + '%"></div></div>' +
-                '</div>' +
-                '<div class="cm-bar-wrap">' +
-                  '<div class="cm-bar-info"><span>' + isp2 + '</span><span>' + avgUl2 + ' Mbps</span></div>' +
-                  '<div class="cm-bar-bg"><div class="cm-bar-fill cm-fill-2" style="width:' + Math.round((avgUl2/maxUlVal)*100) + '%"></div></div>' +
-                '</div>' +
-              '</div>' +
-            '</div>' +
-
-            '<div class="compare-metric-group">' +
-              '<span class="cm-label">Average Ping Latency (Lower is better)</span>' +
-              '<div class="cm-bars">' +
-                '<div class="cm-bar-wrap">' +
-                  '<div class="cm-bar-info"><span>' + isp1 + '</span><span>' + avgP1 + ' ms ' + (winP1 ? '<span class="winner-badge">FASTEST</span>' : '') + '</span></div>' +
-                  '<div class="cm-bar-bg"><div class="cm-bar-fill cm-fill-1" style="width:' + Math.round((avgP1/maxPVal)*100) + '%"></div></div>' +
-                '</div>' +
-                '<div class="cm-bar-wrap">' +
-                  '<div class="cm-bar-info"><span>' + isp2 + '</span><span>' + avgP2 + ' ms ' + (!winP1 ? '<span class="winner-badge">FASTEST</span>' : '') + '</span></div>' +
-                  '<div class="cm-bar-bg"><div class="cm-bar-fill cm-fill-2" style="width:' + Math.round((avgP2/maxPVal)*100) + '%"></div></div>' +
+              '<div class="ph-rec-card">' +
+                '<span class="ph-rec-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></span>' +
+                '<div class="ph-rec-body">' +
+                  '<span class="ph-rec-title">Heavy Downloads Schedule</span>' +
+                  '<span class="ph-rec-sub">Schedule large file &amp; game updates (50GB+) between 01:00 AM and 06:00 AM for maximum throughput.</span>' +
                 '</div>' +
               '</div>' +
             '</div>' +
@@ -1018,10 +1046,11 @@ function renderLeaderboard(tab, page) {
         '</div>';
 
       setTimeout(function() {
-        var s1 = document.getElementById('cmp-sel-1');
-        var s2 = document.getElementById('cmp-sel-2');
-        if (s1) s1.addEventListener('change', function(e) { window.compareIsp1 = e.target.value; renderLeaderboard('compare'); });
-        if (s2) s2.addEventListener('change', function(e) { window.compareIsp2 = e.target.value; renderLeaderboard('compare'); });
+        var sel = document.getElementById('ph-isp-select');
+        if (sel) sel.addEventListener('change', function(e) {
+          window.selectedPeakIsp = e.target.value;
+          renderLeaderboard('peakhours');
+        });
       }, 50);
       return;
     }

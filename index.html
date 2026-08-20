@@ -456,9 +456,9 @@
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
           <span>Speed Tiers</span>
         </button>
-        <button class="lb-tab" data-tab="compare">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 3l4 4-4 4M20 7H4M8 21l-4-4 4-4M4 17h16"/></svg>
-          <span>Compare ISPs</span>
+        <button class="lb-tab" data-tab="peakhours">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 16 14"/></svg>
+          <span>Peak Hours Forecast</span>
         </button>
       </div>
 
@@ -499,15 +499,18 @@
           <span class="tab-cnt" id="cnt-all">0</span>
         </button>
         <button class="outage-tab" data-filter="critical">
-          <span>🚨 Critical Outages</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <span>Critical Outages</span>
           <span class="tab-cnt cnt-critical" id="cnt-critical">0</span>
         </button>
         <button class="outage-tab" data-filter="warning">
-          <span>⚠️ Performance Warnings</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f97316" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          <span>Performance Warnings</span>
           <span class="tab-cnt cnt-warning" id="cnt-warning">0</span>
         </button>
         <button class="outage-tab" data-filter="stable">
-          <span>🟢 Stable Networks</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+          <span>Stable Networks</span>
           <span class="tab-cnt cnt-stable" id="cnt-stable">0</span>
         </button>
       </div>
